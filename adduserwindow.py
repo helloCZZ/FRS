@@ -4,6 +4,7 @@ import sqlite3
 
 import cv2
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
+from PyQt5 import QtGui
 from adduser import Ui_Dialog
 from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QFileDialog, QCompleter
 from cameravideo import camera
@@ -16,16 +17,8 @@ class adduserwindow(Ui_Dialog,QDialog):
     def __init__(self,list,parent=None):
         super(adduserwindow,self).__init__(parent)
         self.setupUi(self)
-        #创建摄像头对象，不能少
-        self.cameravideo = camera()
-        #让摄像头自适应
-        self.label.setScaledContents(True)
         # 把组信息显示在列表框中
         self.show_list(list)
-        # 用到定时器 0ms启动一次
-        self.time = QTimer()
-        self.time.timeout.connect(self.show_cameradata)
-        self.time.start(50)
         # 选择照片按钮
         self.pushButton.clicked.connect(self.get_cameradata)
         #确定按钮
@@ -34,11 +27,26 @@ class adduserwindow(Ui_Dialog,QDialog):
         self.pushButton_3.clicked.connect(self.close_window)
         #导入数据按钮
         self.pushButton_4.clicked.connect(self.import_data)
+        #导入图片按钮
+        self.pushButton_5.clicked.connect(self.get_picture)
         #调用显示数据的函数（从数据库中获取得到）
         self.show_data()
+        # 选择启动摄像头按钮
+        self.pushButton_6.clicked.connect(self.open_camera)
 
-        #新建一个字典用于关联学号和姓名
-        id_name = {}
+
+    #启动摄像头
+    def open_camera(self):
+        # 创建摄像头对象，不能少
+        self.cameravideo = camera()
+        # 让摄像头自适应
+        self.label.setScaledContents(True)
+        # 用到定时器 0ms启动一次
+        self.time = QTimer()
+        self.time.timeout.connect(self.show_cameradata)
+        self.time.start(50)
+
+
     #将摄像头的画面显示到界面中
     def show_cameradata(self):
         # 获取摄像头数据，转换数据
@@ -62,17 +70,23 @@ class adduserwindow(Ui_Dialog,QDialog):
     #通过打开文件来选择照片
     def get_picture(self):
         # 首先得到图片的路径,path
-        filename, rel = QFileDialog.getOpenFileName(self, "导入图片", ".", "JPG(*.jpg)")
-        print(filename)
-        path = filename
-        picture = pd.read_
+        img_path, imgType = QFileDialog.getOpenFileName(self, "打开图片", "", "*.jpg;;*.png;;All Files(*)")
+        #以只读的方式打开图片
+        f = open(img_path,'rb')
+        #将图片显示到界面上
+        jpg = QtGui.QPixmap(img_path).scaled(self.label_5.width(), self.label_5.height())
+        self.label_5.setPixmap(jpg)
+        #将图片转换为base64格式
+        self.base64_image = base64.b64encode(f.read()).decode()
+
     # 把组信息显示在列表框中
     def show_list(self,list):
         for l in list:
              self.listWidget.addItem(l)
-        self.listWidget.setCurrentRow(1)
+        self.listWidget.setCurrentRow(0)
     #确定按钮功能
     def get_data_close(self):
+
         #选择的哪个用户组,注意currentItem()有括号！！！
         self.group_id = self.listWidget.currentItem().text()
         self.user_id = self.lineEdit.text()
