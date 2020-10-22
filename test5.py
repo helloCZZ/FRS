@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 ################################################
 
 items_list = ["张", "C++", "Java", "Python", "JavaScript", "C#", "Swift", "go", "Ruby", "Lua", "PHP"]
-
+#
 
 ################################################
 class Widget(QWidget):
