@@ -1,4 +1,5 @@
 import base64
+import sqlite3
 import sys
 import cv2
 import requests
@@ -53,9 +54,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.actionopen.triggered.connect(self.on_actionopen)#actionopen对应界面中的“启动签到”
         #退出签到
         self.actionclose.triggered.connect(self.on_actionclose)
-        #添加用户组信号槽
+        #添加用户组（班级）信号槽
         self.actionaddgroup.triggered.connect(self.add_group)
-        #删除用户组信号槽
+        #删除用户组（班级）信号槽
         self.actiondelgroup.triggered.connect(self.delgroup)
         #获取组列表信号槽
         self.actiongetlist.triggered.connect(self.getgrouplist)
@@ -368,10 +369,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.plainTextEdit.setPlainText(data)
 
 
-    #添加用户组功能函数
+    #添加用户组（班级）功能函数
+    #添加班级的同时创建两张表，学生表:class_*_student(*号对应班级），签到表：class_*_student_sign
     def add_group(self):
         '''
-        创建用户组
+        创建用户组（班级）
         '''
 
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/add"
@@ -392,6 +394,20 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 QMessageBox.about(self,"班级添加结果","班级添加成功")
             else:
                 QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
+        #创建两张表
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        # 添加班级学生表，class3_STUDENT
+        table_1 = group+'_STUDENT'
+        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+        #添加班级学生签到表 class3_STUDENT_SINGN
+        table_2 = group+'_STUDENT_SIGN'
+        #签到成功表包含：学号，姓名，班级，签到日期
+        c.execute("CREATE TABLE '"+table_2+"'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+        conn.commit()
+        print("创表成功！")
+        print("添加班级成功！")
+
 
     #删除用户组
     def delgroup(self):
@@ -414,8 +430,17 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 QMessageBox.about(self,"班级删除","删除成功")
              else:
                 QMessageBox.about(self, "用户组删除", "删除失败")
-
-
+        #删除两张表
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        table_1 = group + '_STUDENT'
+        c.execute("drop TABLE '" + table_1 + "'")
+        print("ok1")
+        table_2 = group + '_STUDENT_SIGN'
+        c.execute("drop TABLE '" + table_2 + "'")
+        print("删表成功！")
+        print("删除班级成功！")
+        conn.commit()
     #用户组查询
     def getlist(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getlist"
@@ -447,9 +472,14 @@ class mywindow(Ui_MainWindow,QMainWindow):
             QMessageBox.about(self, "摄像头状态", "摄像头已打开，正在进行人脸签到，请关闭签到再添加用户\n")
             return
         list = self.getlist()
+        #首先选择班级，选择好后传到后台
+        i = ''
+        for l in list['result']['group_id_list']:
+            i=i+l+' '
+        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i,QLineEdit.Normal, "class1")
         #再次打开添加人脸窗口
         while(1):
-            self.window = adduserwindow(list['result']['group_id_list'], self)
+            self.window = adduserwindow(group, self)
             # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
             # 窗口关闭时会有一个结束的标志
             window_status = self.window.exec_()

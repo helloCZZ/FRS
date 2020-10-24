@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>967</width>
+    <width>966</width>
     <height>597</height>
    </rect>
   </property>
@@ -44,19 +44,19 @@
     <rect>
      <x>770</x>
      <y>40</y>
-     <width>191</width>
+     <width>101</width>
      <height>221</height>
     </rect>
    </property>
    <property name="title">
-    <string>选择班级添加学生</string>
+    <string>已选择的班级</string>
    </property>
    <widget class="QListWidget" name="listWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>171</width>
+      <width>91</width>
       <height>191</height>
      </rect>
     </property>
@@ -101,7 +101,7 @@
   <widget class="QLineEdit" name="lineEdit_2">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>350</x>
      <y>410</y>
      <width>131</width>
      <height>51</height>
@@ -111,20 +111,20 @@
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>490</x>
      <y>500</y>
      <width>31</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>部门：</string>
+    <string>班级：</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="lineEdit_3">
    <property name="geometry">
     <rect>
-     <x>570</x>
+     <x>530</x>
      <y>480</y>
      <width>191</width>
      <height>51</height>
@@ -147,7 +147,7 @@
   <widget class="QPushButton" name="pushButton_3">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>540</x>
      <y>560</y>
      <width>75</width>
      <height>23</height>
@@ -160,9 +160,9 @@
   <widget class="QComboBox" name="comboBox">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>240</x>
      <y>410</y>
-     <width>201</width>
+     <width>111</width>
      <height>51</height>
     </rect>
    </property>
@@ -231,7 +231,7 @@
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>0</x>
+     <x>20</x>
      <y>10</y>
      <width>431</width>
      <height>311</height>
@@ -244,7 +244,7 @@
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>450</x>
      <y>10</y>
      <width>321</width>
      <height>311</height>
