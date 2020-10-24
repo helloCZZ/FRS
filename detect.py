@@ -124,7 +124,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                     del[data['result']['user_list'][0]['score']]
                     #获取当前系统时间
                     datetime = QDateTime.currentDateTime()
-                    #将时间转换成字符串
+                    #将时间转换成字符串,只显示月日 时间
                     datetime = datetime.toString("MM-dd hh:mm:ss")
                     data['result']['user_list'][0]['datetime'] = datetime
                     #设置一个键，唯一标识一个人，防止错误重复进行签到
