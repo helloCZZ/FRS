@@ -18,6 +18,10 @@ class detect_thread(QThread):#新的线程类，并继承QThread
     search_data = pyqtSignal(str)
     #ok(布尔值)用于判断退出while循环
     ok = True
+
+    #标志位，判断是否检测到人脸
+    faceMark = False
+
     #创建字典，用来存放签到数据
     sign_list = {}
     def __init__(self,token,group):#进行初始化,需要传递一个token(访问令牌)参数
@@ -90,16 +94,22 @@ class detect_thread(QThread):#新的线程类，并继承QThread
             if data['error_code'] !=0:
                 self.transmit_data.emit(data)
                 self.search_data.emit("摄像头未获取到画面，请不要遮挡摄像头")
+                self.faceMark = False
                 return
             #当检测到有人脸时执行人脸搜索功能
             if data['result']['face_num'] > 0:
                 # 发送信号emit()，将获取到的数据传到主界面
                 self.transmit_data.emit(dict(data))
                 self.face_search()
+
+                #将人脸标志位设置为True
+                self.faceMark = True
             #当没有检测到人脸，发送空数据过去
             else:
                 # 发送信号emit()
                 print("not detectface")
+                # 将人脸标志位设置为False
+                self.faceMark = False
     #人脸搜索功能,只识别一个人
     def face_search(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/search"

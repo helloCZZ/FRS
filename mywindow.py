@@ -2,7 +2,7 @@ import base64
 import sys
 import cv2
 import requests
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
 from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal,QDir  # 引入定时器库
@@ -12,6 +12,9 @@ from adduserwindow import adduserwindow#将用户窗口导入主窗口
 from delfacewindow import delfacewindow#将删除用户窗口导入主窗口
 from data_show import sign_data
 from sign_successwindow import sign_sussesswindow
+from playsound import playsound
+
+
 '''
 子类、继承Ui_MainWindow与QMainWindow
 Ui_MainWindow：
@@ -66,6 +69,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #签到成功信息查看
         self.actionsave.triggered.connect(self.on_actionsave)
 
+        #播放视频信息
+        video = 'mlxtj.mp4'  # 加载视频文件
+        self.cap = cv2.VideoCapture(video)
 
     #创建线程函数完成检测,参数有:令牌,列表（用来存放签到成功的数据）
     def create_thread(self,group):
@@ -97,15 +103,15 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 互斥信号量
         self.camera_status = True
 
+        # 启动检测线程,解决卡顿问题
+        self.create_thread(group)
         # 启动定时器，进行定时，每隔10ms进行一次获取摄像头数据进行显示
         # timeshow定时器用作显示画面
         self.timeshow = QTimer(self)
-        self.timeshow.start(10)
+        self.timeshow.start(30)
         # 10ms后定时器启动，产生一个timeout信号，.connect()关联槽函数
         self.timeshow.timeout.connect(self.show_cameradata)
 
-        # 启动检测线程,解决卡顿问题
-        self.create_thread(group)
         # facedetecttime定时器设置检测画面获取
         # 当打开摄像头时，创建定时器500ms，用于获取检测的画面
         self.facedetecttime = QTimer(self)
@@ -179,8 +185,12 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     def show_cameradata(self):
         #获取摄像头数据，转换数据
-
-        pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
+        #判断是否检测到了人脸
+        if self.detectThread.faceMark:
+            #playsound('welcome.mp3')
+            pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
+        else:
+            pic = self.playVideo()
         #显示数据，显示画面
         self.label.setPixmap(pic)  # 将获取到的数据拿到界面中进行显示
 
@@ -323,6 +333,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 '''
 
     #人脸检测与属性分析请求,想得到如年龄、性别等信息。
+    #未被调用
     def get_face(self):
         '''
         这是打开对话框获取画面
@@ -583,3 +594,22 @@ class mywindow(Ui_MainWindow,QMainWindow):
     def on_actionsave(self):
         window_3 = sign_sussesswindow(self)
         status = window_3.exec_()
+
+    #播放广告视频
+    def playVideo(self):
+        ret, data = self.cap.read()  # ret是否成功，data是数据
+        if not ret:
+            print("获取摄像头数据失败!!!")
+            return None
+        currentframe = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
+        # 设置宽和高
+        # self.currentframe = cv2.cvtColor(self.currentframe,(640,480))
+        # 转换格式（界面能够显示的格式）lable显示Qpixmap
+        # 获取画面的宽度和高度
+        height, width = currentframe.shape[:2]
+        # 先转换成QImage类型的图片（画面），创建QImage对象，使用摄像头的画面数据进行创建
+        # QImage(data,width,height,format)创建：数据，宽度，高度，格式
+        qimg = QImage(currentframe, width, height, QImage.Format_RGB888)
+        # 由于上面的形式不适合图像显示，故还需要转换格式
+        qpixmap = QPixmap.fromImage(qimg)
+        return qpixmap
