@@ -125,7 +125,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                     #获取当前系统时间
                     datetime = QDateTime.currentDateTime()
                     #将时间转换成字符串
-                    datetime = datetime.toString("yyyy-MM-dd hh:mm:ss")
+                    datetime = datetime.toString("hh:mm:ss")
                     data['result']['user_list'][0]['datetime'] = datetime
                     #设置一个键，唯一标识一个人，防止错误重复进行签到
                     key = data['result']['user_list'][0]['group_id']+data['result']['user_list'][0]['user_id']
@@ -137,6 +137,22 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                     user_id = data['result']['user_list'][0]['user_id']
                     user_info = data['result']['user_list'][0]['user_info']
                     self.search_data.emit("学生签到成功!\n\n"+"学号:"+user_id+'\n\n'+user_info)
+                    #将学生签到成功的信息保存到class*_student_sign表中
+                    conn = sqlite3.connect('my.db')
+                    c = conn.cursor()
+                    table_1 = self.group+'_student_sign'
+                    table_2 = self.group+'_student'
+                    cursor = c.execute("select name,class from '"+table_2+"' where id ='"+user_id+"'")
+                    for i in cursor:
+                        name = i[0]
+                        class_ = i[1]
+
+                    cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
+                    if(len(list(cursor_))):
+                        pass
+                    else:
+                        c.execute("insert into '"+table_1+"'(id,name,class,date) values(?,?,?,?)",(user_id,name,class_,datetime))
+                        conn.commit()
 
             else:
                 self.search_data.emit("学生签到不成功,找不到对应的学生")

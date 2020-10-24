@@ -81,15 +81,22 @@ class adduserwindow(Ui_Dialog,QDialog):
         self.listWidget.addItem(self.group)
     #确定按钮功能
     def get_data_close(self):
-
         #选择的哪个用户组,注意currentItem()有括号！！！
         self.group_id = self.group
         self.user_id = self.lineEdit.text()
         self.msg_name = self.lineEdit_2.text()
         self.msg_department = self.lineEdit_3.text()
-        #点确定后应该关闭对话框
-        self.accept()
 
+        #如果是自己手动添加信息，也需要写入数据库
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        print("ok1")
+        c.execute("INSERT INTO '" + self.table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.msg_department))
+        conn.commit()
+        print("ok2")
+
+        # 点确定后应该关闭对话框
+        self.accept()
 
     #取消按钮功能
     def close_window(self):
@@ -129,18 +136,18 @@ class adduserwindow(Ui_Dialog,QDialog):
             #c.execute('CREATE TABLE STUDENT_1(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL)')
             #print("ok1")
             #将值取出来并放入表中
-            table = self.group + '_STUDENT'
+            self.table = self.group + '_STUDENT'
             for i in self.id_name[0].items():
                 print(i[0])
                 print(i[1])
-                c.execute("INSERT INTO '" + table + "'(ID,NAME) VALUES (?,?)", (i[0], i[1]))
+                c.execute("INSERT INTO '" + self.table + "'(ID,NAME) VALUES (?,?)", (i[0], i[1]))
                 print("ok1")
                 #print(i[2])
             for l in self.id_name[1].items():
                 print(l[0])
                 print(l[1])
                 #这里采用更新语句加入班级
-                c.execute("update '" + table + "' set class = ? where id = ?",(l[1],l[0]))
+                c.execute("update '" + self.table + "' set class = ? where id = ?",(l[1],l[0]))
                 print("ok2")
             conn.commit()
             print("导入数据到数据库成功！")

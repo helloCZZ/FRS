@@ -611,5 +611,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     #查看签到成功的信息
     def on_actionsave(self):
-        window_3 = sign_sussesswindow(self)
+        list = self.getlist()
+        i = ''
+        for l in list['result']['group_id_list']:
+            i = i + l + ' '
+        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
+        window_3 = sign_sussesswindow(group,self)
         status = window_3.exec_()

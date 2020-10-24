@@ -141,7 +141,7 @@ class Ui_MainWindow(object):
         self.actionclose.setText(_translate("MainWindow", "退出签到"))
         self.actionadd.setText(_translate("MainWindow", "添加学生"))
         self.actiondel.setText(_translate("MainWindow", "删除学生"))
-        self.actionsave.setText(_translate("MainWindow", "学生签到成功信息"))
+        self.actionsave.setText(_translate("MainWindow", "查看学生签到信息"))
         self.actiond.setText(_translate("MainWindow", "导出学生签到信息"))
         self.actionaddgroup.setText(_translate("MainWindow", "添加班级"))
         self.actiondelgroup.setText(_translate("MainWindow", "删除班级"))
