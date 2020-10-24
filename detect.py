@@ -22,6 +22,11 @@ class detect_thread(QThread):#新的线程类，并继承QThread
     #标志位，判断是否检测到人脸
     faceMark = False
 
+    #最后一次检测到的人脸
+    lastFace = ''
+    # 判断最后一次检测到的人脸
+    isLastFace = True
+
     #创建字典，用来存放签到数据
     sign_list = {}
     def __init__(self,token,group):#进行初始化,需要传递一个token(访问令牌)参数
@@ -146,6 +151,12 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                     #通过信号槽的方式将人脸搜索返回的结果传到主界面
                     user_id = data['result']['user_list'][0]['user_id']
                     user_info = data['result']['user_list'][0]['user_info']
+
+                    if self.lastFace != user_id:
+                        self.isLastFace = False
+                    # 保存最后一次的人脸id
+                    self.lastFace = user_id
+
                     self.search_data.emit("学生签到成功!\n\n"+"学号:"+user_id+'\n\n'+user_info)
 
             else:
