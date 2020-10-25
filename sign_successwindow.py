@@ -1,7 +1,7 @@
 import sqlite3
 import time
 from PyQt5.QtWidgets import QDialog, QTableWidgetItem, QAbstractItemView, QFileDialog, QMessageBox
-
+import xlwt
 from sign_success import Ui_Dialog
 
 
@@ -49,7 +49,31 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
         # 导出数据
     def save_data(self):
         # 打开对话框，获取要导出的数据的文件名
-        filename, rel = QFileDialog.getSaveFileName(self, "导出数据", ".", "EXCEL(*.excel)")
+        filename, rel = QFileDialog.getSaveFileName(self, "导出数据", ".","EXCEL(*.xls)")
+
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        print("Opened database successfully")
+        # 查询操作
+        # c.execute("INSERT INTO STUDENT_2(ID,NAME,DEPARTMENT,DATE) VALUES (1,'f','s','2020-10-8')")
+        print("添加成功")
+        cursor = c.execute("SELECT ID,NAME,DEPARTMENT,DATE FROM STUDENT_2")
+        print("查询成功")
+
+        workbook = xlwt.Workbook()  # 新建一个工作簿
+        sheet = workbook.add_sheet("data")  # 在工作簿中新建一个表格
+        #rowcount = cursor.rowcount
+        i = 1
+        sheet.write(0, 0, "卡号")
+        sheet.write(0, 1, "姓名")
+        sheet.write(0, 2, "部门")
+        sheet.write(0, 3, "签到时间")
+        for row in cursor:
+            for line in range(4):
+                sheet.write(i, line,row[line] )
+            i = i + 1
+        #print(filename)
+        workbook.save(filename)  # 保存工作簿
         self.accept()
         # 取消按钮
     def close_window(self):
@@ -63,3 +87,5 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
             QMessageBox.about(self, "签到信息表删除", "删除成功")
             print("删除成功")
             conn.commit()
+
+
