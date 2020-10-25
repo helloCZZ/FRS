@@ -48,7 +48,7 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
         self.pushButton_2.clicked.connect(self.close_window)
         # 导出数据
     def save_data(self):
-        # 打开对话框，获取要导出的数据的文件名
+        # 打开对话框，获取要导出的数据的文件名和格式
         filename, rel = QFileDialog.getSaveFileName(self, "导出数据", ".","EXCEL(*.xls)")
 
         conn = sqlite3.connect('my.db')
