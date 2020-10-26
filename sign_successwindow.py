@@ -1,5 +1,7 @@
 import sqlite3
 import time
+
+import xlwt
 from PyQt5.QtWidgets import QDialog, QTableWidgetItem, QAbstractItemView, QFileDialog, QMessageBox
 
 from sign_success import Ui_Dialog
@@ -66,8 +68,29 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
 
 
     def save_data(self):
-        # 打开对话框，获取要导出的数据的文件名
-        filename, rel = QFileDialog.getSaveFileName(self, "导出数据", ".", "EXCEL(*.excel)")
+        # 打开对话框，获取要导出的数据的文件名和格式
+        filename, rel = QFileDialog.getSaveFileName(self, "导出数据", ".", "EXCEL(*.xls)")
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        cursor = c.execute("select * from '" + self.table_2 + "' where id not in(select id from '" + self.table + "')")
+        print("查询成功")
+        workbook = xlwt.Workbook()  # 新建一个工作簿
+        sheet = workbook.add_sheet("data")  # 在工作簿中新建一个表格
+        print("Ok1")
+        # rowcount = cursor.rowcount
+        i = 2
+        str = self.group+'未签到人员名单'
+        print(str)
+        sheet.write(0,0,str)
+        sheet.write(1, 0, "卡号")
+        sheet.write(1, 1, "姓名")
+        sheet.write(1, 2, "班级")
+        for row in cursor:
+            for line in range(3):
+                sheet.write(i, line, row[line])
+            i = i + 1
+        #print(filename)
+        workbook.save(filename)  # 保存工作簿
         self.accept()
         # 取消按钮
     def close_window(self):
