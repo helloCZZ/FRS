@@ -33,13 +33,11 @@ class Ui_Dialog(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.pushButton = QtWidgets.QPushButton(Dialog)
-        self.pushButton.setStyleSheet("background:rgb(138, 170, 155)")
         self.pushButton.setObjectName("pushButton")
         self.horizontalLayout.addWidget(self.pushButton)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.pushButton_2 = QtWidgets.QPushButton(Dialog)
-        self.pushButton_2.setStyleSheet("background:rgb(138, 170, 155)")
         self.pushButton_2.setObjectName("pushButton_2")
         self.horizontalLayout.addWidget(self.pushButton_2)
         self.verticalLayout.addLayout(self.horizontalLayout)
@@ -60,13 +58,3 @@ class Ui_Dialog(object):
         item.setText(_translate("Dialog", "签到时间"))
         self.pushButton.setText(_translate("Dialog", "导出签到信息"))
         self.pushButton_2.setText(_translate("Dialog", "取消"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    Dialog = QtWidgets.QDialog()
-    ui = Ui_Dialog()
-    ui.setupUi(Dialog)
-    Dialog.show()
-    sys.exit(app.exec_())

@@ -1,8 +1,9 @@
 import base64
+import sqlite3
 import sys
 import cv2
 import requests
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
 from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal,QDir  # 引入定时器库
@@ -12,9 +13,6 @@ from adduserwindow import adduserwindow#将用户窗口导入主窗口
 from delfacewindow import delfacewindow#将删除用户窗口导入主窗口
 from data_show import sign_data
 from sign_successwindow import sign_sussesswindow
-from playsound import playsound
-
-
 '''
 子类、继承Ui_MainWindow与QMainWindow
 Ui_MainWindow：
@@ -56,9 +54,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.actionopen.triggered.connect(self.on_actionopen)#actionopen对应界面中的“启动签到”
         #退出签到
         self.actionclose.triggered.connect(self.on_actionclose)
-        #添加用户组信号槽
+        #添加用户组（班级）信号槽
         self.actionaddgroup.triggered.connect(self.add_group)
-        #删除用户组信号槽
+        #删除用户组（班级）信号槽
         self.actiondelgroup.triggered.connect(self.delgroup)
         #获取组列表信号槽
         self.actiongetlist.triggered.connect(self.getgrouplist)
@@ -69,9 +67,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #签到成功信息查看
         self.actionsave.triggered.connect(self.on_actionsave)
 
-        #播放视频信息
-        video = 'mlxtj.mp4'  # 加载视频文件
-        self.cap = cv2.VideoCapture(video)
 
     #创建线程函数完成检测,参数有:令牌,列表（用来存放签到成功的数据）
     def create_thread(self,group):
@@ -103,15 +98,15 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 互斥信号量
         self.camera_status = True
 
-        # 启动检测线程,解决卡顿问题
-        self.create_thread(group)
         # 启动定时器，进行定时，每隔10ms进行一次获取摄像头数据进行显示
         # timeshow定时器用作显示画面
         self.timeshow = QTimer(self)
-        self.timeshow.start(30)
+        self.timeshow.start(10)
         # 10ms后定时器启动，产生一个timeout信号，.connect()关联槽函数
         self.timeshow.timeout.connect(self.show_cameradata)
 
+        # 启动检测线程,解决卡顿问题
+        self.create_thread(group)
         # facedetecttime定时器设置检测画面获取
         # 当打开摄像头时，创建定时器500ms，用于获取检测的画面
         self.facedetecttime = QTimer(self)
@@ -185,16 +180,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     def show_cameradata(self):
         #获取摄像头数据，转换数据
-        #判断是否检测到了人脸
-        if self.detectThread.faceMark:
-            #判断此次检测到的人脸和上一张人脸是否为同一人
-            if not self.detectThread.isLastFace:
-                playsound('welcome.mp3')
-                self.detectThread.isLastFace = True
-            pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
-            #print(self.detectThread.isLastFace)
-        else:
-            pic = self.playVideo()
+
+        pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
         #显示数据，显示画面
         self.label.setPixmap(pic)  # 将获取到的数据拿到界面中进行显示
 
@@ -337,7 +324,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 '''
 
     #人脸检测与属性分析请求,想得到如年龄、性别等信息。
-    #未被调用
     def get_face(self):
         '''
         这是打开对话框获取画面
@@ -383,10 +369,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.plainTextEdit.setPlainText(data)
 
 
-    #添加用户组功能函数
+    #添加用户组（班级）功能函数
+    #添加班级的同时创建两张表，学生表:class_*_student(*号对应班级），签到表：class_*_student_sign
     def add_group(self):
         '''
-        创建用户组
+        创建用户组（班级）
         '''
 
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/add"
@@ -407,6 +394,20 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 QMessageBox.about(self,"班级添加结果","班级添加成功")
             else:
                 QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
+        #创建两张表
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        # 添加班级学生表，class3_STUDENT
+        table_1 = group+'_STUDENT'
+        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+        #添加班级学生签到表 class3_STUDENT_SINGN
+        table_2 = group+'_STUDENT_SIGN'
+        #签到成功表包含：学号，姓名，班级，签到日期
+        c.execute("CREATE TABLE '"+table_2+"'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+        conn.commit()
+        print("创表成功！")
+        print("添加班级成功！")
+
 
     #删除用户组
     def delgroup(self):
@@ -429,8 +430,17 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 QMessageBox.about(self,"班级删除","删除成功")
              else:
                 QMessageBox.about(self, "用户组删除", "删除失败")
-
-
+        #删除两张表
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        table_1 = group + '_STUDENT'
+        c.execute("drop TABLE '" + table_1 + "'")
+        print("ok1")
+        table_2 = group + '_STUDENT_SIGN'
+        c.execute("drop TABLE '" + table_2 + "'")
+        print("删表成功！")
+        print("删除班级成功！")
+        conn.commit()
     #用户组查询
     def getlist(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getlist"
@@ -462,9 +472,14 @@ class mywindow(Ui_MainWindow,QMainWindow):
             QMessageBox.about(self, "摄像头状态", "摄像头已打开，正在进行人脸签到，请关闭签到再添加用户\n")
             return
         list = self.getlist()
+        #首先选择班级，选择好后传到后台
+        i = ''
+        for l in list['result']['group_id_list']:
+            i=i+l+' '
+        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i,QLineEdit.Normal, "class1")
         #再次打开添加人脸窗口
         while(1):
-            self.window = adduserwindow(list['result']['group_id_list'], self)
+            self.window = adduserwindow(group, self)
             # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
             # 窗口关闭时会有一个结束的标志
             window_status = self.window.exec_()
@@ -596,24 +611,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     #查看签到成功的信息
     def on_actionsave(self):
-        window_3 = sign_sussesswindow(self)
+        list = self.getlist()
+        i = ''
+        for l in list['result']['group_id_list']:
+            i = i + l + ' '
+        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
+        window_3 = sign_sussesswindow(group,self)
         status = window_3.exec_()
-
-    #播放广告视频
-    def playVideo(self):
-        ret, data = self.cap.read()  # ret是否成功，data是数据
-        if not ret:
-            print("获取摄像头数据失败!!!")
-            return None
-        currentframe = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
-        # 设置宽和高
-        # self.currentframe = cv2.cvtColor(self.currentframe,(640,480))
-        # 转换格式（界面能够显示的格式）lable显示Qpixmap
-        # 获取画面的宽度和高度
-        height, width = currentframe.shape[:2]
-        # 先转换成QImage类型的图片（画面），创建QImage对象，使用摄像头的画面数据进行创建
-        # QImage(data,width,height,format)创建：数据，宽度，高度，格式
-        qimg = QImage(currentframe, width, height, QImage.Format_RGB888)
-        # 由于上面的形式不适合图像显示，故还需要转换格式
-        qpixmap = QPixmap.fromImage(qimg)
-        return qpixmap
