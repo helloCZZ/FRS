@@ -3,7 +3,7 @@ import sqlite3
 import sys
 import cv2
 import requests
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
 from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal,QDir  # 引入定时器库
@@ -633,3 +633,22 @@ class mywindow(Ui_MainWindow,QMainWindow):
         group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
         window_3 = sign_sussesswindow(group,self)
         status = window_3.exec_()
+
+    #播放广告视频
+    def playVideo(self):
+        ret, data = self.cap.read()  # ret是否成功，data是数据
+        if not ret:
+            print("获取摄像头数据失败!!!")
+            return None
+        currentframe = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
+        # 设置宽和高
+        # self.currentframe = cv2.cvtColor(self.currentframe,(640,480))
+        # 转换格式（界面能够显示的格式）lable显示Qpixmap
+        # 获取画面的宽度和高度
+        height, width = currentframe.shape[:2]
+        # 先转换成QImage类型的图片（画面），创建QImage对象，使用摄像头的画面数据进行创建
+        # QImage(data,width,height,format)创建：数据，宽度，高度，格式
+        qimg = QImage(currentframe, width, height, QImage.Format_RGB888)
+        # 由于上面的形式不适合图像显示，故还需要转换格式
+        qpixmap = QPixmap.fromImage(qimg)
+        return qpixmap
