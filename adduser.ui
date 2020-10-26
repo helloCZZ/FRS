@@ -6,15 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>967</width>
+    <width>966</width>
     <height>597</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
-  </property>
-  <property name="styleSheet">
-   <string notr="true">background:rgb(189, 183, 255)</string>
   </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
@@ -38,10 +35,6 @@
      <height>41</height>
     </rect>
    </property>
-   <property name="styleSheet">
-    <string notr="true">border:1px solid black;
-border-radius:8px</string>
-   </property>
    <property name="text">
     <string>选择人脸图片</string>
    </property>
@@ -51,19 +44,19 @@ border-radius:8px</string>
     <rect>
      <x>770</x>
      <y>40</y>
-     <width>191</width>
+     <width>101</width>
      <height>221</height>
     </rect>
    </property>
    <property name="title">
-    <string>选择班级添加学生</string>
+    <string>已选择的班级</string>
    </property>
    <widget class="QListWidget" name="listWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>171</width>
+      <width>91</width>
       <height>191</height>
      </rect>
     </property>
@@ -72,72 +65,80 @@ border-radius:8px</string>
   <widget class="QLineEdit" name="lineEdit">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>240</x>
      <y>480</y>
-     <width>171</width>
-     <height>41</height>
+     <width>231</width>
+     <height>51</height>
     </rect>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>190</x>
      <y>490</y>
-     <width>36</width>
-     <height>16</height>
+     <width>31</width>
+     <height>30</height>
     </rect>
    </property>
    <property name="text">
     <string>学号：</string>
    </property>
   </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>429</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>姓名：</string>
+   </property>
+  </widget>
   <widget class="QLineEdit" name="lineEdit_2">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>350</x>
      <y>410</y>
      <width>131</width>
-     <height>41</height>
+     <height>51</height>
     </rect>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>550</y>
+     <x>490</x>
+     <y>500</y>
      <width>31</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>部门：</string>
+    <string>班级：</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="lineEdit_3">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>540</y>
-     <width>171</width>
-     <height>41</height>
+     <x>530</x>
+     <y>480</y>
+     <width>191</width>
+     <height>51</height>
     </rect>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_2">
    <property name="geometry">
     <rect>
-     <x>870</x>
-     <y>510</y>
+     <x>240</x>
+     <y>560</y>
      <width>75</width>
      <height>23</height>
     </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">background:rgb(138, 170, 155);
-border:1px solid black;
-border-radius:8px</string>
    </property>
    <property name="text">
     <string>确定</string>
@@ -146,33 +147,43 @@ border-radius:8px</string>
   <widget class="QPushButton" name="pushButton_3">
    <property name="geometry">
     <rect>
-     <x>870</x>
+     <x>540</x>
      <y>560</y>
      <width>75</width>
      <height>23</height>
     </rect>
    </property>
-   <property name="styleSheet">
-    <string notr="true">background:rgb(138, 170, 155);
-border:1px solid black;
-border-radius:8px</string>
-   </property>
    <property name="text">
     <string>取消</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>410</y>
+     <width>111</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 60pt &quot;ADMUI3Lg&quot;;</string>
+   </property>
+   <property name="editable">
+    <bool>true</bool>
+   </property>
+   <property name="insertPolicy">
+    <enum>QComboBox::InsertAtTop</enum>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_4">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>540</y>
+     <x>50</x>
+     <y>460</y>
      <width>91</width>
      <height>41</height>
     </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">border:1px solid black;
-border-radius:8px</string>
    </property>
    <property name="text">
     <string>导入数据</string>
@@ -200,10 +211,6 @@ border-radius:8px</string>
      <height>41</height>
     </rect>
    </property>
-   <property name="styleSheet">
-    <string notr="true">border:1px solid black;
-border-radius:8px</string>
-   </property>
    <property name="text">
     <string>添加人脸照片</string>
    </property>
@@ -217,10 +224,6 @@ border-radius:8px</string>
      <height>41</height>
     </rect>
    </property>
-   <property name="styleSheet">
-    <string notr="true">border:1px solid black;
-border-radius:8px</string>
-   </property>
    <property name="text">
     <string>打开摄像头</string>
    </property>
@@ -228,7 +231,7 @@ border-radius:8px</string>
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>0</x>
+     <x>20</x>
      <y>10</y>
      <width>431</width>
      <height>311</height>
@@ -241,7 +244,7 @@ border-radius:8px</string>
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>450</x>
      <y>10</y>
      <width>321</width>
      <height>311</height>
@@ -249,38 +252,6 @@ border-radius:8px</string>
    </property>
    <property name="title">
     <string/>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox">
-   <property name="geometry">
-    <rect>
-     <x>53</x>
-     <y>411</y>
-     <width>171</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 60pt &quot;ADMUI3Lg&quot;;</string>
-   </property>
-   <property name="editable">
-    <bool>true</bool>
-   </property>
-   <property name="insertPolicy">
-    <enum>QComboBox::InsertAtTop</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>420</y>
-     <width>36</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>姓名：</string>
    </property>
   </widget>
  </widget>

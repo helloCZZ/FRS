@@ -6,22 +6,16 @@ import cv2
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5 import QtGui
 from adduser import Ui_Dialog
-from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QFileDialog, QCompleter
+from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QFileDialog, QCompleter, QInputDialog, QLineEdit
 from cameravideo import camera
 import pandas as pd
-
-#新创建一个类,继承adduserwindow窗口中的Ui_Dialog这个类
-#from test5 import items_list
-#from PyQt5 import QtCore
-
 class adduserwindow(Ui_Dialog,QDialog):
-    def __init__(self,list,parent=None):
+    def __init__(self,group,parent=None):
         super(adduserwindow,self).__init__(parent)
         self.setupUi(self)
-        #self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.setWindowTitle('添加学生')
+        self.group = group
         # 把组信息显示在列表框中
-        self.show_list(list)
+        self.show_list(group)
         # 选择照片按钮
         self.pushButton.clicked.connect(self.get_cameradata)
         #确定按钮
@@ -84,20 +78,25 @@ class adduserwindow(Ui_Dialog,QDialog):
 
     # 把组信息显示在列表框中
     def show_list(self,list):
-        for l in list:
-             self.listWidget.addItem(l)
-        self.listWidget.setCurrentRow(0)
+        self.listWidget.addItem(self.group)
     #确定按钮功能
     def get_data_close(self):
-
         #选择的哪个用户组,注意currentItem()有括号！！！
-        self.group_id = self.listWidget.currentItem().text()
+        self.group_id = self.group
         self.user_id = self.lineEdit.text()
         self.msg_name = self.lineEdit_2.text()
         self.msg_department = self.lineEdit_3.text()
-        #点确定后应该关闭对话框
-        self.accept()
 
+        #如果是自己手动添加信息，也需要写入数据库
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        print("ok1")
+        c.execute("INSERT INTO '" + self.table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.msg_department))
+        conn.commit()
+        print("ok2")
+
+        # 点确定后应该关闭对话框
+        self.accept()
 
     #取消按钮功能
     def close_window(self):
@@ -113,6 +112,7 @@ class adduserwindow(Ui_Dialog,QDialog):
         # 打开对话框，获取要导出的数据的文件名
         # 获取excel表中的数据
         # "./test.xls"也行
+        #先选择将学生添加到哪一个班级
         filename, rel = QFileDialog.getOpenFileName(self, "导入数据", ".", "EXCEL(*.*)")
         print(filename)
         path = filename
@@ -125,9 +125,10 @@ class adduserwindow(Ui_Dialog,QDialog):
             print(type(sh_data))
             #将pand.DataFrame类型转换为字典类型
             #id_name = sh_data.to_dict()
-            self.id_name = sh_data.set_index('姓名').T.to_dict(orient='records')
+            #这里为什么只能显示两个值？？字典形式
+            self.id_name= sh_data.set_index('学号').T.to_dict(orient='records')
+            #self.id_name_2 = sh_data.set_index('班级').T.to_dict(orient='records')
             #print(self.id_name)
-
             # 将导入的数据存入到数据库my.db的student中
             conn = sqlite3.connect('my.db')
             # 创建游标方便执行命令
@@ -135,11 +136,20 @@ class adduserwindow(Ui_Dialog,QDialog):
             #c.execute('CREATE TABLE STUDENT_1(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL)')
             #print("ok1")
             #将值取出来并放入表中
+            self.table = self.group + '_STUDENT'
             for i in self.id_name[0].items():
                 print(i[0])
                 print(i[1])
-                c.execute("INSERT INTO STUDENT_1(ID,NAME) VALUES (?,?)",(i[1], i[0]))
-                conn.commit()
+                c.execute("INSERT INTO '" + self.table + "'(ID,NAME) VALUES (?,?)", (i[0], i[1]))
+                print("ok1")
+                #print(i[2])
+            for l in self.id_name[1].items():
+                print(l[0])
+                print(l[1])
+                #这里采用更新语句加入班级
+                c.execute("update '" + self.table + "' set class = ? where id = ?",(l[1],l[0]))
+                print("ok2")
+            conn.commit()
             print("导入数据到数据库成功！")
 
     #写一个函数从数据库中获取信息并显示到表单中
@@ -147,7 +157,8 @@ class adduserwindow(Ui_Dialog,QDialog):
             #从数据库中取出数据
             conn = sqlite3.connect('my.db')
             c = conn.cursor()
-            cursor = c.execute('select name from student_1')
+            self.table = self.group+'_STUDENT'
+            cursor = c.execute("select name from '"+self.table+"'")
             data = []
             for l in cursor:
                 #print(l[0])
@@ -171,9 +182,11 @@ class adduserwindow(Ui_Dialog,QDialog):
         conn = sqlite3.connect('my.db')
         c = conn.cursor()
         #从数据库中查找
-        cursor = c.execute("select id from student_1 where name = '"+name+"'")
+        cursor = c.execute("select id,class from '"+self.table+"' where name = '"+name+"'")
         for l in cursor:
             id = str(l[0])
+            class_ = str(l[1])
+        print(class_)
         self.lineEdit.setText(id)
         #默认部门是信息科学与工程学院
-        self.lineEdit_3.setText("信息科学与工程学院")
+        self.lineEdit_3.setText(class_)

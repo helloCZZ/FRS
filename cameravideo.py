@@ -33,8 +33,6 @@ class camera():
     #pic保存的是摄像头获取到的数据
     def camera_to_pic(self):
         pic = self.read_camera()
-        #镜像显示
-        pic = cv2.flip(pic, 1)
         #摄像头是以BGR方式存储，首先需要转换为RGB(将pic转换成RGB存储方式)
         #调用cvtColor完成后才是RGB格式格式的画面数据
         self.currentframe = cv2.cvtColor(pic,cv2.COLOR_BGR2RGB)
