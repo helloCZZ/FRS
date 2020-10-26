@@ -7,7 +7,7 @@ from delface import Ui_Dialog
 #创建一个delfacewindow类，QDialog不能省略（不知道具体是做什么的）
 
 class delfacewindow(Ui_Dialog,QDialog):
-    #初始化函数，用户组列表和用户显示是在初始化函数中实现的,需要从主窗口传过来一个用户组列表(list)
+    #初始化函数，用户组列表和用户显示是在初始化函数中实现的,需要从主窗口传过来一个用户组列表(list)。
     def __init__(self,list,accesstoken,parent=None):
         self.accesstoken = accesstoken
         super(delfacewindow,self).__init__(parent)
