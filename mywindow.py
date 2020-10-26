@@ -1,9 +1,11 @@
 import base64
-import sqlite3
 import sys
 import cv2
 import requests
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QMovie
+
+from PyQt5 import QtCore
+
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
 from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal,QDir  # 引入定时器库
@@ -34,8 +36,17 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.setupUi(self)#创建界面内容
         #如果图片过大显示不完整，下面这条语句会让图片显示完整
         self.label.setScaledContents(True)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowMinimizeButtonHint)
         #在label中插入一张图片
-        self.label.setPixmap(QPixmap("./init.jpg"))
+        #self.label.setPixmap(QPixmap("./init.jpg"))
+
+        self.label_5.setText('签到啦！')
+        #self.gif=QMovie('flower.gif')
+        #self.label.setMovie(self.gif)
+        #self.gif.start()
+
+        self.pushButton.clicked.connect(self.close)
+
         #创建一个时间定时器
         self.datetime = QTimer(self)
         #启动时间定时器,定时时间为500ms，500ms产生一次信号
@@ -54,9 +65,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.actionopen.triggered.connect(self.on_actionopen)#actionopen对应界面中的“启动签到”
         #退出签到
         self.actionclose.triggered.connect(self.on_actionclose)
-        #添加用户组（班级）信号槽
+        #添加用户组信号槽
         self.actionaddgroup.triggered.connect(self.add_group)
-        #删除用户组（班级）信号槽
+        #删除用户组信号槽
         self.actiondelgroup.triggered.connect(self.delgroup)
         #获取组列表信号槽
         self.actiongetlist.triggered.connect(self.getgrouplist)
@@ -75,16 +86,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     #函数功能：获取系统时间与日期，添加到界面对应的编辑器中。
     def date_time(self):
-        # 获取日期
-        date = QDate.currentDate()
-        # 设置日期
-        self.dateEdit.setDate(date)
-        # 获取时间
+        #date = QDate.currentDate()
+        #date.DateFormat('yyyy-MM-dd')
+        #self.label_7.setText(date.toString())
         time = QTime.currentTime()
-        # 设置时间
-        self.timeEdit.setTime(time)
-        # 获取日期时间
-        #datatime = QDateTime.currentDateTime()
+        self.label_6.setText(time.toString())
 
     #点击签到函数，里面包含打开摄像头，关联一个线程（用于发送人脸检测的图片）
     def on_actionopen(self):
@@ -153,7 +159,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 摄像头的一个定时器和检测画面的一个定时器同时关闭时才清空
         if self.timeshow.isActive() == False and self.facedetecttime.isActive() == False:
             print("关闭成功")
-            self.label.setPixmap(QPixmap("./init.jpg"))
+            #self.label.setText('签到啦！')
+            self.gif = QMovie('flower.gif')
+            self.label.setMovie(self.gif)
+            self.gif.start()
             self.plainTextEdit.clear()
             self.plainTextEdit_2.clear()
         else:
@@ -369,11 +378,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.plainTextEdit.setPlainText(data)
 
 
-    #添加用户组（班级）功能函数
-    #添加班级的同时创建两张表，学生表:class_*_student(*号对应班级），签到表：class_*_student_sign
+    #添加用户组功能函数
     def add_group(self):
         '''
-        创建用户组（班级）
+        创建用户组
         '''
 
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/add"
@@ -394,20 +402,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 QMessageBox.about(self,"班级添加结果","班级添加成功")
             else:
                 QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
-        #创建两张表
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        # 添加班级学生表，class3_STUDENT
-        table_1 = group+'_STUDENT'
-        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
-        #添加班级学生签到表 class3_STUDENT_SINGN
-        table_2 = group+'_STUDENT_SIGN'
-        #签到成功表包含：学号，姓名，班级，签到日期
-        c.execute("CREATE TABLE '"+table_2+"'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
-        conn.commit()
-        print("创表成功！")
-        print("添加班级成功！")
-
 
     #删除用户组
     def delgroup(self):
@@ -430,17 +424,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 QMessageBox.about(self,"班级删除","删除成功")
              else:
                 QMessageBox.about(self, "用户组删除", "删除失败")
-        #删除两张表
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        table_1 = group + '_STUDENT'
-        c.execute("drop TABLE '" + table_1 + "'")
-        print("ok1")
-        table_2 = group + '_STUDENT_SIGN'
-        c.execute("drop TABLE '" + table_2 + "'")
-        print("删表成功！")
-        print("删除班级成功！")
-        conn.commit()
+
+
     #用户组查询
     def getlist(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getlist"
@@ -472,14 +457,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
             QMessageBox.about(self, "摄像头状态", "摄像头已打开，正在进行人脸签到，请关闭签到再添加用户\n")
             return
         list = self.getlist()
-        #首先选择班级，选择好后传到后台
-        i = ''
-        for l in list['result']['group_id_list']:
-            i=i+l+' '
-        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i,QLineEdit.Normal, "class1")
         #再次打开添加人脸窗口
         while(1):
-            self.window = adduserwindow(group, self)
+            self.window = adduserwindow(list['result']['group_id_list'], self)
             # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
             # 窗口关闭时会有一个结束的标志
             window_status = self.window.exec_()
@@ -611,10 +591,5 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     #查看签到成功的信息
     def on_actionsave(self):
-        list = self.getlist()
-        i = ''
-        for l in list['result']['group_id_list']:
-            i = i + l + ' '
-        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
-        window_3 = sign_sussesswindow(group,self)
+        window_3 = sign_sussesswindow(self)
         status = window_3.exec_()

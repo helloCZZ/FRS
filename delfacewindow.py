@@ -4,6 +4,7 @@ import sqlite3
 import requests
 from PyQt5.QtWidgets import QDialog
 from delface import Ui_Dialog
+from PyQt5 import QtCore
 #创建一个delfacewindow类，QDialog不能省略（不知道具体是做什么的）
 
 class delfacewindow(Ui_Dialog,QDialog):
@@ -12,6 +13,7 @@ class delfacewindow(Ui_Dialog,QDialog):
         self.accesstoken = accesstoken
         super(delfacewindow,self).__init__(parent)
         self.setupUi(self)
+        self.setWindowTitle('删除学生')
         # 把组信息显示在列表框中
         self.show_list(list)
         self.pushButton_3.clicked.connect(self.show_userlist)
@@ -34,16 +36,18 @@ class delfacewindow(Ui_Dialog,QDialog):
         # 得到用户列表后显示到界面中
         for i in range(len(list_user)):
             #根据学生学号找到学生，并将学号和姓名显示到界面上
-            table = self.group_id+'_student'
             conn = sqlite3.connect('my.db')
             c = conn.cursor()
-            cursor = c.execute("select name,id from '"+table+"' where id = '" + list_user[i] + "'")
+            cursor = c.execute("select name,id from student_1 where id = '" + list_user[i] + "'")
             #cursor = c.execute("select name from student_1 where id = ?",123)
             #print(c.fetchall())
             for l in cursor:
                 name = str(l[0])
                 id = str(l[1])
+                print(str(name))
                 self.listWidget_2.addItem(id+'  '+name)
+
+
     # 获取用户列表,需要传一个用户组过来
     def getuserslist(self, group,accesstoken):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getusers"
