@@ -13,24 +13,27 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">background:rgb(189, 183, 255)</string>
+  </property>
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>20</x>
      <y>50</y>
-     <width>181</width>
-     <height>221</height>
+     <width>241</width>
+     <height>261</height>
     </rect>
    </property>
    <property name="title">
-    <string>选择要查看学生所在的班级</string>
+    <string>选择学生班级</string>
    </property>
    <widget class="QListWidget" name="listWidget">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>171</width>
+      <x>10</x>
+      <y>30</y>
+      <width>211</width>
       <height>201</height>
      </rect>
     </property>
@@ -39,22 +42,22 @@
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>270</x>
+     <x>340</x>
      <y>50</y>
      <width>221</width>
      <height>271</height>
     </rect>
    </property>
    <property name="title">
-    <string>选择要查看的学生</string>
+    <string>选择学生</string>
    </property>
    <widget class="QListWidget" name="listWidget_2">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>20</y>
+      <y>30</y>
       <width>211</width>
-      <height>251</height>
+      <height>201</height>
      </rect>
     </property>
    </widget>
@@ -62,24 +65,34 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>380</y>
-     <width>161</width>
+     <x>170</x>
+     <y>360</y>
+     <width>75</width>
      <height>23</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background:rgb(138, 170, 155);
+border:1px solid black;
+border-radius:8px</string>
+   </property>
    <property name="text">
-    <string>确定已选择的学生并删除</string>
+    <string>删除</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_2">
    <property name="geometry">
     <rect>
-     <x>330</x>
-     <y>380</y>
+     <x>340</x>
+     <y>360</y>
      <width>75</width>
      <height>23</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background:rgb(138, 170, 155);
+border:1px solid black;
+border-radius:8px</string>
    </property>
    <property name="text">
     <string>取消</string>
@@ -88,11 +101,14 @@
   <widget class="QPushButton" name="pushButton_3">
    <property name="geometry">
     <rect>
-     <x>230</x>
-     <y>150</y>
+     <x>280</x>
+     <y>260</y>
      <width>31</width>
      <height>21</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
    </property>
    <property name="text">
     <string>选中</string>

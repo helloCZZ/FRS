@@ -11,12 +11,15 @@ from cameravideo import camera
 import pandas as pd
 
 #新创建一个类,继承adduserwindow窗口中的Ui_Dialog这个类
-from test5 import items_list
+#from test5 import items_list
+#from PyQt5 import QtCore
 
 class adduserwindow(Ui_Dialog,QDialog):
     def __init__(self,list,parent=None):
         super(adduserwindow,self).__init__(parent)
         self.setupUi(self)
+        #self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setWindowTitle('添加学生')
         # 把组信息显示在列表框中
         self.show_list(list)
         # 选择照片按钮

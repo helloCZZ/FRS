@@ -21,7 +21,6 @@ class camera():
             print("isOpened")
         #定义一个多维数组，用来存储获取的画面数据
         self.currentframe = np.array([])
-
     #读取摄像头的数据，返回获取到的数据data
     def read_camera(self):
         ret,data = self.capture.read()#ret是否成功，data是数据
