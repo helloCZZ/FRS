@@ -12,7 +12,7 @@ class delfacewindow(Ui_Dialog,QDialog):
         self.accesstoken = accesstoken
         super(delfacewindow,self).__init__(parent)
         self.setupUi(self)
-        # 把组信息显示在列表框中。
+        # 把组信息显示在列表框中
         self.show_list(list)
         self.pushButton_3.clicked.connect(self.show_userlist)
         self.pushButton.clicked.connect(self.get_data_close)
