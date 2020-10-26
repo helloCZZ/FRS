@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QDialog, QTableWidgetItem, QAbstractItemView, QFileD
 import xlwt
 from sign_success import Ui_Dialog
 
-
 class sign_sussesswindow(Ui_Dialog,QDialog):
     def __init__(self,parent=None):
         super(sign_sussesswindow,self).__init__(parent)
