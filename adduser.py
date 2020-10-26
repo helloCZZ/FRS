@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-123
 
 # Form implementation generated from reading ui file 'adduser.ui'
 #
