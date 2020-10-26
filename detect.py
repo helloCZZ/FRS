@@ -168,12 +168,12 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                         name = i[0]
                         class_ = i[1]
 
-                    cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
-                    if(len(list(cursor_))):
-                        pass
-                    else:
-                        c.execute("insert into '"+table_1+"'(id,name,class,date) values(?,?,?,?)",(user_id,name,class_,datetime))
-                        conn.commit()
+                    # cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
+                    # if(len(list(cursor_))):
+                    #     pass
+                    # else:
+                    #     c.execute("insert into '"+table_1+"'(id,name,class,date) values(?,?,?,?)",(user_id,name,class_,datetime))
+                    #     conn.commit()
 
             else:
                 self.search_data.emit("学生签到不成功,找不到对应的学生")

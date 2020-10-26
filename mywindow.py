@@ -189,7 +189,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         if self.detectThread.faceMark:
             #判断此次检测到的人脸和上一张人脸是否为同一人
             if not self.detectThread.isLastFace:
-                playsound('welcome.mp3')
+                #playsound('welcome.wav')
                 self.detectThread.isLastFace = True
             pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
             #print(self.detectThread.isLastFace)
