@@ -72,7 +72,8 @@ class detect_thread(QThread):#新的线程类，并继承QThread
             "image": base64_image,  # 图片信息字符串
             "image_type": "BASE64",  # 图片信息的格式
             "face_field": "gender,age,beauty,expression,face_shape,glasses,emotion,mask",  # 请求识别人脸的属性，各个属性在字符串中用逗号隔开
-            "max_face_num": 10  # 最多可以检测人脸的数目为：10
+            "max_face_num": 10,# 最多可以检测人脸的数目为：10
+            "liveness_control":"NORMAL"
         }
 
         # 访问令牌，已经获取到
@@ -86,10 +87,11 @@ class detect_thread(QThread):#新的线程类，并继承QThread
         response = requests.post(request_url, data=params, headers=headers)
         if response:
             data = response.json()
+            print(data)
             #做一个判断：如果没有检测到人脸，将错误代码返还回去，注意需要有return语句
             if data['error_code'] !=0:
                 self.transmit_data.emit(data)
-                self.search_data.emit("摄像头未获取到画面，请不要遮挡摄像头")
+                self.search_data.emit("摄像头未获取到画面，请勿使用图片")
                 return
             #当检测到有人脸时执行人脸搜索功能
             if data['result']['face_num'] > 0:
