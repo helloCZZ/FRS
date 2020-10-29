@@ -154,25 +154,24 @@ class detect_thread(QThread):#新的线程类，并继承QThread
 
                     if self.lastFace != user_id:
                         self.isLastFace = False
-                    # 保存最后一次的人脸id
+                    # 保存最后一次的人脸id(其实就是学号)
                     self.lastFace = user_id
-
                     self.search_data.emit("学生签到成功!\n\n"+"学号:"+user_id+'\n\n'+user_info)
                     #将学生签到成功的信息保存到class*_student_sign表中
-                    conn = sqlite3.connect('my.db')
-                    c = conn.cursor()
-                    table_1 = self.group+'_student_sign'
-                    table_2 = self.group+'_student'
-                    cursor = c.execute("select name,class from '"+table_2+"' where id ='"+user_id+"'")
-                    for i in cursor:
-                        name = i[0]
-                        class_ = i[1]
-                    cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
-                    if (len(list(cursor_))):
-                        pass
-                    else:
-                        c.execute("insert into '" + table_1 + "'(id,name,class,date) values(?,?,?,?)",(user_id, name, class_, datetime))
-                        conn.commit()
+                    # conn = sqlite3.connect('my.db')
+                    # c = conn.cursor()
+                    # table_1 = self.group+'_student_sign'
+                    # table_2 = self.group+'_student'
+                    # cursor = c.execute("select name,class from '"+table_2+"' where id ='"+user_id+"'")
+                    # for i in cursor:
+                    #     name = i[0]
+                    #     class_ = i[1]
+                    # cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
+                    # if (len(list(cursor_))):
+                    #     pass
+                    # else:
+                    #     c.execute("insert into '" + table_1 + "'(id,name,class,date) values(?,?,?,?)",(user_id, name, class_, datetime))
+                    #     conn.commit()
 
             else:
                 self.search_data.emit("学生签到不成功,找不到对应的学生")

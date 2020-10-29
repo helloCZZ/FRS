@@ -3,10 +3,15 @@ import sqlite3
 import sys
 import cv2
 import requests
+
+import os
+
 from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
+
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
-from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal,QDir  # 引入定时器库
+from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal, QDir, QUrl  # 引入定时器库
 from cameravideo import camera
 from detect import detect_thread#导入自己写的线程
 from adduserwindow import adduserwindow#将用户窗口导入主窗口
@@ -14,7 +19,7 @@ from delfacewindow import delfacewindow#将删除用户窗口导入主窗口
 from data_show import sign_data
 from sign_successwindow import sign_sussesswindow
 from playsound import playsound
-
+import time
 
 '''
 子类、继承Ui_MainWindow与QMainWindow
@@ -35,10 +40,37 @@ class mywindow(Ui_MainWindow,QMainWindow):
     def __init__(self):#初始化
         super(mywindow,self).__init__()
         self.setupUi(self)#创建界面内容
+
+        #cz 获取公共视频播放列表
+        videoList = os.listdir("video/ID0000")
+        url = QUrl()
+        #将视频列表加载到playList中
+        self.playList = QMediaPlaylist()
+
+        # 将个人视频列表加载到playList中
+        self.playList2 = QMediaPlaylist()
+
+        #3为列表循环
+        self.playList.setPlaybackMode(3)
+        self.playList2.setPlaybackMode(3)
+
+        for videoPath in videoList:
+            #sys.path[0]获取的绝对路径为反斜杠，需要替换为正的
+            url.setUrl(sys.path[0].replace('\\','/') + "/video/ID0000/" + videoPath)
+            self.playList.addMedia(QMediaContent(url))
+
+        #cz
+        self.player = QMediaPlayer()
+        self.player.setVideoOutput(self.videoWidget)
+
+        #player2用来播放每个人的视频
+        self.player2 = QMediaPlayer()
+        #self.player2.setVideoOutput(self.videoWidget)
+
         #如果图片过大显示不完整，下面这条语句会让图片显示完整
-        self.label.setScaledContents(True)
+        #self.label.setScaledContents(True)
         #在label中插入一张图片
-        self.label.setPixmap(QPixmap("./init.jpg"))
+        #self.label.setPixmap(QPixmap("./init.jpg"))
         #创建一个时间定时器
         self.datetime = QTimer(self)
         #启动时间定时器,定时时间为500ms，500ms产生一次信号
@@ -55,6 +87,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #connect:关联（槽函数）
         #self.on_actionopen：关联的函数是on_actionopen这个函数
         self.actionopen.triggered.connect(self.on_actionopen)#actionopen对应界面中的“启动签到”
+
+        #cz 签到按钮开始播放广告
+        self.actionopen.triggered.connect(self.openVideoFile)  # actionopen对应界面中的“启动签到”
+
         #退出签到
         self.actionclose.triggered.connect(self.on_actionclose)
         #添加用户组（班级）信号槽
@@ -159,7 +195,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 摄像头的一个定时器和检测画面的一个定时器同时关闭时才清空
         if self.timeshow.isActive() == False and self.facedetecttime.isActive() == False:
             print("关闭成功")
-            self.label.setPixmap(QPixmap("./init.jpg"))
+            #self.label.setPixmap(QPixmap("./init.jpg"))
             self.plainTextEdit.clear()
             self.plainTextEdit_2.clear()
         else:
@@ -188,16 +224,38 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #获取摄像头数据，转换数据
         #判断是否检测到了人脸
         if self.detectThread.faceMark:
+
+
             #判断此次检测到的人脸和上一张人脸是否为同一人
             if not self.detectThread.isLastFace:
-                #playsound('welcome.wav')
+                # 获取当前人脸对应的视频文件夹
+                user_id = self.detectThread.lastFace
+                #判断是否存在此用户的视频文件夹
+                if os.path.exists("video/"+user_id):
+                    url = QUrl()
+
+                    user_id = self.detectThread.lastFace
+                    videoList = os.listdir("video/" + user_id)
+                    #清空上一个人的播放列表
+                    self.playList2.clear()
+                    for videoPath in videoList:
+                        url.setUrl(sys.path[0].replace('\\', '/') + "/video/" + user_id + "/" + videoPath)
+                        self.playList2.addMedia(QMediaContent(url))
+
+                    #self.player.pause()
+                    #print("z")
+                    self.player2.setVideoOutput(self.videoWidget)
+                    self.player2.setPlaylist(self.playList2)
+                    self.player2.play()
+                    self.player.pause()
+
                 self.detectThread.isLastFace = True
-            pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
+            #pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
             #print(self.detectThread.isLastFace)
-        else:
-            pic = self.playVideo()
-        #显示数据，显示画面
-        self.label.setPixmap(pic)  # 将获取到的数据拿到界面中进行显示
+        # else:
+        #     pic = self.playVideo()
+        # #显示数据，显示画面
+        # self.label.setPixmap(pic)  # 将获取到的数据拿到界面中进行显示
 
     #获取accesstoken（访问令牌）的槽函数
     def get_accesstoken(self):
@@ -652,3 +710,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 由于上面的形式不适合图像显示，故还需要转换格式
         qpixmap = QPixmap.fromImage(qimg)
         return qpixmap
+
+    #cz
+    def openVideoFile(self):
+        self.player.setPlaylist(self.playList)
+        self.player.play()  # 播放视频
