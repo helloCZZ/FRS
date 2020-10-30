@@ -13,10 +13,9 @@ from cameravideo import camera
 from detect import detect_thread#导入自己写的线程
 from adduserwindow import adduserwindow#将用户窗口导入主窗口
 from delfacewindow import delfacewindow#将删除用户窗口导入主窗口
-from data_show import sign_data
 from sign_successwindow import sign_sussesswindow
 from playsound import playsound
-
+from data_show import sign_data
 
 '''
 子类、继承Ui_MainWindow与QMainWindow
@@ -34,7 +33,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
     camera_status = False
 
     # 初始化函数
-    def __init__(self):#初始化
+    def __init__(self,token):#初始化
         super(mywindow,self).__init__()
         self.setupUi(self)#创建界面内容
         #如果图片过大显示不完整，下面这条语句会让图片显示完整
@@ -46,10 +45,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #启动时间定时器,定时时间为500ms，500ms产生一次信号
         self.datetime.start(500)
         #关联槽函数
-        self.datetime.timeout.connect(self.date_time)
+        #self.datetime.timeout.connect(self.date_time)
         # 创建窗口就应该完成完成访问令牌的申请操作
-        self.get_accesstoken()
-
+        self.access_token = token
+        #self.get_accesstoken()
+        self.get_datetime()
         #设计启动关联信号槽
         #信号与槽的关联
         #self.actionopen：指定对象
@@ -72,7 +72,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #签到成功信息查看
         self.actionsave.triggered.connect(self.on_actionsave)
         #批量导入学生信息
-        self.actioninput_student.triggered.connect(self.input_student)
+        self.actioninput_student_3.triggered.connect(self.input_student)
         #播放视频信息
         video = 'mlxtj.mp4'  # 加载视频文件
         self.cap = cv2.VideoCapture(video)
@@ -82,18 +82,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.detectThread = detect_thread(self.access_token,group)
         self.detectThread.start()
 
-    #函数功能：获取系统时间与日期，添加到界面对应的编辑器中。
-    def date_time(self):
-        # 获取日期
-        date = QDate.currentDate()
-        # 设置日期
-        self.dateEdit.setDate(date)
-        # 获取时间
-        time = QTime.currentTime()
-        # 设置时间
-        self.timeEdit.setTime(time)
-        # 获取日期时间
-        #datatime = QDateTime.currentDateTime()
+    # 获取日期，并添加到界面中
+    def get_datetime(self):
+        qdatetime = QDateTime.currentDateTime()
+        self.label_4.setText(qdatetime.toString("ddd  yyyy/MM/dd  hh:mm:ss"))
 
     #点击签到函数，里面包含打开摄像头，关联一个线程（用于发送人脸检测的图片）
     def on_actionopen(self):
@@ -131,28 +123,28 @@ class mywindow(Ui_MainWindow,QMainWindow):
         else:
             return
 
-    #退出签到，槽函数
+    # 退出签到，槽函数
     def on_actionclose(self):
         print("关闭定时器2")
-        #关闭定时器2
+        # 关闭定时器2
         self.facedetecttime.stop()
-        #下面三条语句老师讲可写可不写，但如果我这里写上点击退出签到时会有问题，故不写
-        #self.facedetecttime.timeout().disconnect(self.get_cameradata)
-        #self.detect_data_signal.disconnect(self.detectThread.get_base64)
-        #self.detectThread.transmit_data.connect(self.get_detectdata)
-        #关闭检测线程
-        #退出线程的run函数
+        # 下面三条语句老师讲可写可不写，但如果我这里写上点击退出签到时会有问题，故不写
+        # self.facedetecttime.timeout().disconnect(self.get_cameradata)
+        # self.detect_data_signal.disconnect(self.detectThread.get_base64)
+        # self.detectThread.transmit_data.connect(self.get_detectdata)
+        # 关闭检测线程
+        # 退出线程的run函数
         self.detectThread.ok = False
-        #线程结束 返回Fslse
+        # 线程结束 返回Fslse
         self.detectThread.quit()
         self.detectThread.wait()
 
-        #关闭定时器1，不再去获取摄像头进行数据显示
+        # 关闭定时器1，不再去获取摄像头进行数据显示
         self.timeshow.stop()
         # 关闭摄像头
         self.cameravideo.close_camera()
 
-        #设置互斥信号量
+        # 设置互斥信号量
         self.camera_status = False
         # 显示本次签到情况,签到数据从线程的字典中拿出来
         # 创建一个类,并将线程传过来的数据交个窗口
@@ -169,7 +161,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.plainTextEdit_2.clear()
         else:
             print("关闭失败，存在部分窗口没有关闭")
-
 
     '''
     信号槽功能：
@@ -204,17 +195,17 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #显示数据，显示画面
         self.label.setPixmap(pic)  # 将获取到的数据拿到界面中进行显示
 
-    #获取accesstoken（访问令牌）的槽函数
-    def get_accesstoken(self):
-        #host是字符串对象，存储的是授权服务地址----获取accesstoken的地址
-        host = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=HtoZ9pM4HsG7GGEldsbwjOCq&client_secret=3H7vVG5uXklMPRaMeWIA2RwmG30jqk9G'
-        #发送网络请求 requests 网络库
-        #使用get函数发送网络请求，参数为网络请求地址，执行时会返回执行结果，
-        response = requests.get(host)
-        if response:
-            response= response.json()
-            self.access_token = response['access_token']
-            #print(self.access_token)
+    # #获取accesstoken（访问令牌）的槽函数
+    # def get_accesstoken(self):
+    #     #host是字符串对象，存储的是授权服务地址----获取accesstoken的地址
+    #     host = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=HtoZ9pM4HsG7GGEldsbwjOCq&client_secret=3H7vVG5uXklMPRaMeWIA2RwmG30jqk9G'
+    #     #发送网络请求 requests 网络库
+    #     #使用get函数发送网络请求，参数为网络请求地址，执行时会返回执行结果，
+    #     response = requests.get(host)
+    #     if response:
+    #         response= response.json()
+    #         self.access_token = response['access_token']
+    #         #print(self.access_token)
 
     #槽函数，获取检测数据
     def get_detectdata(self,data):
@@ -232,7 +223,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 self.plainTextEdit_2.appendPlainText("当前没有人以及人脸信息出现")
                 return
             else:
-
                 self.plainTextEdit_2.appendPlainText("检测到学生人脸信息\n")
             # 人脸信息：data['result']['face_list']，是列表，每个数据是一个字典
             # 取每个人脸信息 data['result']['face_list'][0-i]
@@ -545,7 +535,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
             data = response.json()
             if data['error_code'] == 0:
                 print("添加成功")
-
+                QMessageBox.about(self,"温馨提示","学生人脸信息添加成功！点击OK继续添加")
             '''
             需要自己创建一个窗口来表示人脸信息是否添加成功
             if data['error_code'] == 0:
@@ -692,20 +682,14 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 table = group + '_STUDENT'
                 for i in id_name[0].items():
                     cur_1=c.execute("select * from '"+table+"' where id = ?",(i[0],))
-                    print("ok")
-                    if (len(list(cur_1))):
-                        pass
-                    else:
-                        print("OK1")
+                    studentData = cur_1.fetchall()
+                    if len(studentData) == 0:
                         c.execute("INSERT INTO '" + table + "'(ID,NAME) VALUES (?,?)", (i[0], i[1]))
-
                 for l in id_name[1].items():
-                    cur_2 = c.execute("select * from '" + table + "'where id = ?",(l[0],))
-                    if len(list(cur_2)):
-                        return
-                    else:
+                    # cur_2 = c.execute("select * from '" + table + "'where id = ?",(l[0],))
+                    # studentData_2 = cur_2.fetchall()
+                    # if len(studentData_2) == 0:
                         c.execute("update '" + table + "' set class = ? where id = ?", (l[1], l[0]))
-                    print("ok2")
                 conn.commit()
                 QMessageBox.about(self,"温馨提示","学生批量添加成功\n")
 

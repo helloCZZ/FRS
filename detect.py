@@ -123,12 +123,14 @@ class detect_thread(QThread):#新的线程类，并继承QThread
             "image":self.base64_image,
             "image_type":"BASE64",
             #从哪些组中进行人脸识别,点击签到时就将组号传过来
-            "group_id_list":self.group
+            "group_id_list":self.group,
+            #"liveness_control" :"HIGH"
            }
         access_token = self.access_token
         request_url = request_url + "?access_token=" + access_token
         headers = {'content-type': 'application/json'}
         response = requests.post(request_url, data=params, headers=headers)
+
         if response:
             data = response.json()
             if data['error_code'] == 0:
@@ -164,15 +166,15 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                     table_1 = self.group+'_student_sign'
                     table_2 = self.group+'_student'
                     cursor = c.execute("select name,class from '"+table_2+"' where id ='"+user_id+"'")
-                    for i in cursor:
-                        name = i[0]
-                        class_ = i[1]
-                    cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
-                    if (len(list(cursor_))):
-                        pass
-                    else:
-                        c.execute("insert into '" + table_1 + "'(id,name,class,date) values(?,?,?,?)",(user_id, name, class_, datetime))
-                        conn.commit()
+                    studentData = cursor.fetchall()
+                    if len(studentData) != 0:
+                        name = studentData[0]
+                        class_ = studentData[0]
+                        cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
+                        studentData_2 = cursor_.fetchall()
+                        if len(studentData_2)!=0:
+                            c.execute("insert into '" + table_1 + "'(id,name,class,date) values(?,?,?,?)",(user_id, name,class_, datetime))
+                            conn.commit()
 
             else:
                 self.search_data.emit("学生签到不成功,找不到对应的学生")

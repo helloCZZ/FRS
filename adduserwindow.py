@@ -30,7 +30,7 @@ class adduserwindow(Ui_Dialog,QDialog):
         #取消按钮
         self.pushButton_3.clicked.connect(self.close_window)
         self.groupBox.setStyleSheet('QGroupBox{border:2px,clolor:green}')
-
+        self.show_data()
     #启动摄像头
     def open_camera(self):
         # 创建摄像头对象，不能少
@@ -100,23 +100,24 @@ class adduserwindow(Ui_Dialog,QDialog):
     def get_data_close(self):
         #如果status为真，说明用户至少选择了一项进行添加人脸
         if self.status==False:
-            if self.lineEdit.text() and self.lineEdit_2.text():
+            if self.lineEdit_3.text() and self.lineEdit.text():
                 #选择的哪个用户组,注意currentItem()有括号！！！
                 self.group_id = self.group
+                self.msg_department = self.lineEdit_3.text()
                 self.user_id = self.lineEdit.text()
-                self.msg_name = self.lineEdit_2.text()
+                self.msg_name = self.comboBox.currentText()
 
                 #如果是自己手动添加信息，也需要写入数据库
                 conn = sqlite3.connect('my.db')
                 c = conn.cursor()
                 table = self.group+'_student'
                 cursor = c.execute("select * from '"+table+"'where id = '"+self.user_id+"'")
-                print("ok1")
-                if len(list(cursor)):
+                studentdata = cursor.fetchall()
+                if len(studentdata) != 0:
                     QMessageBox.about(self, "温馨提示", "编号已经存在，请重新输入！\n")
                     return
                 else:
-                    c.execute("INSERT INTO '" + table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.group))
+                    c.execute("INSERT INTO '" + table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.msg_department))
                     conn.commit()
             else:
                 QMessageBox.about(self,"温馨提示","姓名或编号还没有输入")
@@ -130,9 +131,40 @@ class adduserwindow(Ui_Dialog,QDialog):
     def close_window(self):
         self.reject()
 
-    #设置按钮为灰色
-    def btnsetdisabled(self, btn):
-        if btn.isEnabled():
-            btn.setEnabled(False)
-        else:
-            btn.setEnabled(True)
+        # 写一个函数从数据库中获取信息并显示到表单中
+
+    def show_data(self):
+        # 从数据库中取出数据
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        self.table = self.group + '_STUDENT'
+        cursor = c.execute("select name from '" + self.table + "'")
+        data = []
+        for l in cursor:
+            # print(l[0])
+            # 添加数据到列表中
+            data.append(l[0])
+            self.comboBox.addItem(l[0])
+        self.comboBox.setCurrentIndex(-1)
+        # 增加自动补全
+        self.completer = QCompleter(data)
+        self.completer.setFilterMode(Qt.MatchContains)
+        self.completer.setCompletionMode(QCompleter.PopupCompletion)
+        self.comboBox.setCompleter(self.completer)
+        self.comboBox.currentIndexChanged.connect(self.selchange)
+
+        # 函数用来将鼠标选中的信息显示到文本框中
+
+    def selchange(self):
+        name = self.comboBox.currentText()
+        #self.lineEdit_2.setText(name)
+        # 根据姓名来查找学号
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        # 从数据库中查找
+        cursor = c.execute("select id,class from '" + self.table + "' where name = '" + name + "'")
+        for l in cursor:
+            id = str(l[0])
+            class_ = str(l[1])
+        self.lineEdit.setText(id)
+        self.lineEdit_3.setText(class_)
