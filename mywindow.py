@@ -6,12 +6,12 @@ import requests
 
 import os
 
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QPalette, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
-from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal, QDir, QUrl  # 引入定时器库
+from PyQt5.QtCore import QTimer, QDateTime, QDate, QTime, pyqtSignal, QDir, QUrl, QSettings  # 引入定时器库
 from cameravideo import camera
 from detect import detect_thread#导入自己写的线程
 from adduserwindow import adduserwindow#将用户窗口导入主窗口
@@ -20,7 +20,7 @@ from data_show import sign_data
 from sign_successwindow import sign_sussesswindow
 from playsound import playsound
 import time
-
+from PyQt5.QtCore import Qt
 '''
 子类、继承Ui_MainWindow与QMainWindow
 Ui_MainWindow：
@@ -37,10 +37,19 @@ class mywindow(Ui_MainWindow,QMainWindow):
     camera_status = False
 
     # 初始化函数
-    def __init__(self):#初始化
+    def __init__(self,token):#初始化
         super(mywindow,self).__init__()
         self.setupUi(self)#创建界面内容
 
+        # 设置一个初始值，后续用来实现：30秒无人脸就进行广告播放
+        self.noFaceNum = 0
+        #设置时间，用来，当未检测到人脸时，实现配置文件中的定时时间到了后，自动切换到广告播放
+        self.timeToChangeVideo = QSettings('config.ini', QSettings.IniFormat).value("timeToChangeVideo")
+        print(self.timeToChangeVideo)
+        # 标志位，是否在播放广告
+        #self.isPlayAdvertising
+
+        self.access_token = token
         #cz 获取公共视频播放列表
         videoList = os.listdir("video/ID0000")
         url = QUrl()
@@ -56,19 +65,32 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
         for videoPath in videoList:
             #sys.path[0]获取的绝对路径为反斜杠，需要替换为正的
-            url.setUrl(sys.path[0].replace('\\','/') + "/video/ID0000/" + videoPath)
+            url.setUrl("./video/ID0000/" + videoPath)
+            print(url)
             self.playList.addMedia(QMediaContent(url))
 
         #cz
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self.videoWidget)
 
+        #添加背景图片
+
+
+        palette = self.videoWidget.palette()
+        print("cccc")
+        pixmap = QPixmap("./init.jpg")
+        print(pixmap)
+        palette.setBrush(palette.Window,QBrush(pixmap))
+        self.videoWidget.setPalette(palette)
+        self.videoWidget.setAutoFillBackground(True)
+        #self.videoWidget.setWindowFlags(Qt.FramelessWindowHint)
+
         #player2用来播放每个人的视频
         self.player2 = QMediaPlayer()
         #self.player2.setVideoOutput(self.videoWidget)
 
         #如果图片过大显示不完整，下面这条语句会让图片显示完整
-        #self.label.setScaledContents(True)
+        self.label.setScaledContents(True)
         #在label中插入一张图片
         #self.label.setPixmap(QPixmap("./init.jpg"))
         #创建一个时间定时器
@@ -78,7 +100,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #关联槽函数
         self.datetime.timeout.connect(self.date_time)
         # 创建窗口就应该完成完成访问令牌的申请操作
-        self.get_accesstoken()
+        #self.get_accesstoken()
 
         #设计启动关联信号槽
         #信号与槽的关联
@@ -106,27 +128,32 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #签到成功信息查看
         self.actionsave.triggered.connect(self.on_actionsave)
 
-        #播放视频信息
-        video = 'mlxtj.mp4'  # 加载视频文件
-        self.cap = cv2.VideoCapture(video)
+        # #播放视频信息
+        # video = 'mlxtj.mp4'  # 加载视频文件
+        # self.cap = cv2.VideoCapture(video)
 
     #创建线程函数完成检测,参数有:令牌,列表（用来存放签到成功的数据）
     def create_thread(self,group):
         self.detectThread = detect_thread(self.access_token,group)
         self.detectThread.start()
 
+    # #函数功能：获取系统时间与日期，添加到界面对应的编辑器中。
+    # def date_time(self):
+    #     # 获取日期
+    #     date = QDate.currentDate()
+    #     # 设置日期
+    #     self.dateEdit.setDate(date)
+    #     # 获取时间
+    #     time = QTime.currentTime()
+    #     # 设置时间
+    #     self.timeEdit.setTime(time)
+    #     # 获取日期时间
+    #     #datatime = QDateTime.currentDateTime()
+
     #函数功能：获取系统时间与日期，添加到界面对应的编辑器中。
     def date_time(self):
-        # 获取日期
-        date = QDate.currentDate()
-        # 设置日期
-        self.dateEdit.setDate(date)
-        # 获取时间
-        time = QTime.currentTime()
-        # 设置时间
-        self.timeEdit.setTime(time)
-        # 获取日期时间
-        #datatime = QDateTime.currentDateTime()
+        qdatetime = QDateTime.currentDateTime()
+        self.label_4.setText(qdatetime.toString("ddd  yyyy/MM/dd  hh:mm:ss"))
 
     #点击签到函数，里面包含打开摄像头，关联一个线程（用于发送人脸检测的图片）
     def on_actionopen(self):
@@ -221,10 +248,20 @@ class mywindow(Ui_MainWindow,QMainWindow):
     #在界面中显示，只能获取到一次数据，需要设置时间，每隔50ms获取一次
 
     def show_cameradata(self):
+
+        #30秒无人脸，就会切回广告播放
+        if self.noFaceNum == self.timeToChangeVideo:
+            self.player.setVideoOutput(self.videoWidget)
+            self.player.setPlaylist(self.playList)
+            self.player.play()
+            self.player2.pause()
+            self.noFaceNum = 0
+            self.detectThread.isLastFace = False
+
         #获取摄像头数据，转换数据
         #判断是否检测到了人脸
         if self.detectThread.faceMark:
-
+            self.noFaceNum = 0
 
             #判断此次检测到的人脸和上一张人脸是否为同一人
             if not self.detectThread.isLastFace:
@@ -239,17 +276,20 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     #清空上一个人的播放列表
                     self.playList2.clear()
                     for videoPath in videoList:
-                        url.setUrl(sys.path[0].replace('\\', '/') + "/video/" + user_id + "/" + videoPath)
+                        url.setUrl("./video/" + user_id + "/" + videoPath)
                         self.playList2.addMedia(QMediaContent(url))
 
-                    #self.player.pause()
-                    #print("z")
                     self.player2.setVideoOutput(self.videoWidget)
                     self.player2.setPlaylist(self.playList2)
                     self.player2.play()
                     self.player.pause()
 
                 self.detectThread.isLastFace = True
+                print(self.player.state())
+        #判断播放广告的播放器是否运行
+        elif self.player.state()==0 or self.player.state()==2 :
+            self.noFaceNum = self.noFaceNum + 1
+            print(self.noFaceNum)
             #pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
             #print(self.detectThread.isLastFace)
         # else:
@@ -715,3 +755,4 @@ class mywindow(Ui_MainWindow,QMainWindow):
     def openVideoFile(self):
         self.player.setPlaylist(self.playList)
         self.player.play()  # 播放视频
+

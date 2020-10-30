@@ -1,6 +1,6 @@
 import sqlite3
 import time
-
+#import xlwt
 import xlwt
 from PyQt5.QtWidgets import QDialog, QTableWidgetItem, QAbstractItemView, QFileDialog, QMessageBox
 
@@ -19,7 +19,7 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
         #显示未签到学生
         self.search_tosqlite3_2()
         # 显示打卡签到成功的学生信息,从sqlite3中进行查找操作！！！
-        self.pushButton_3.clicked.connect(self.del_data)
+        #self.pushButton_3.clicked.connect(self.del_data)
 
     #显示已经签到的学生信息
     def search_tosqlite3(self):
@@ -33,15 +33,14 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
         for row in cursor:
             id = str(row[0])
             user = row[1]
-            department = row[2]
-            date_time = row[3]
+            date_time = row[2]
             #insertRow()添加第几行的数据，可以通过for循环的执行次数来判断
             rowcount = self.tableWidget.rowCount()
             self.tableWidget.insertRow(rowcount)
             # 插入数据
             self.tableWidget.setItem(rowcount, 0, QTableWidgetItem(id))
             self.tableWidget.setItem(rowcount, 1, QTableWidgetItem(user))
-            self.tableWidget.setItem(rowcount, 2, QTableWidgetItem(department))
+            self.tableWidget.setItem(rowcount, 2, QTableWidgetItem(self.group))
             self.tableWidget.setItem(rowcount, 3, QTableWidgetItem(date_time))
 
         # 关于两个按钮的功能，都是关闭，但是关闭之前完成什么工作
@@ -70,28 +69,31 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
     def save_data(self):
         # 打开对话框，获取要导出的数据的文件名和格式
         filename, rel = QFileDialog.getSaveFileName(self, "导出数据", ".", "EXCEL(*.xls)")
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        cursor = c.execute("select * from '" + self.table_2 + "' where id not in(select id from '" + self.table + "')")
-        print("查询成功")
-        workbook = xlwt.Workbook()  # 新建一个工作簿
-        sheet = workbook.add_sheet("data")  # 在工作簿中新建一个表格
-        print("Ok1")
-        # rowcount = cursor.rowcount
-        i = 2
-        str = self.group+'未签到人员名单'
-        print(str)
-        sheet.write(0,0,str)
-        sheet.write(1, 0, "卡号")
-        sheet.write(1, 1, "姓名")
-        sheet.write(1, 2, "班级")
-        for row in cursor:
-            for line in range(3):
-                sheet.write(i, line, row[line])
-            i = i + 1
-        #print(filename)
-        workbook.save(filename)  # 保存工作簿
-        self.accept()
+        if filename:
+            conn = sqlite3.connect('my.db')
+            c = conn.cursor()
+            cursor = c.execute("select * from '" + self.table_2 + "' where id not in(select id from '" + self.table + "')")
+            print("查询成功")
+            workbook = xlwt.Workbook()  # 新建一个工作簿
+            sheet = workbook.add_sheet("data")  # 在工作簿中新建一个表格
+            print("Ok1")
+            # rowcount = cursor.rowcount
+            i = 2
+            str = self.group+'未签到人员名单'
+            print(str)
+            sheet.write(0,0,str)
+            sheet.write(1, 0, "卡号")
+            sheet.write(1, 1, "姓名")
+            sheet.write(1, 2, "班级")
+            for row in cursor:
+                for line in range(3):
+                    sheet.write(i, line, row[line])
+                i = i + 1
+            #print(filename)
+            workbook.save(filename)  # 保存工作簿
+            self.accept()
+        else:
+            return
         # 取消按钮
     def close_window(self):
         self.reject()

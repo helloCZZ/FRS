@@ -46,7 +46,7 @@ class login_window(Ui_Dialog,QDialog):
             if response:
                 response = response.json()
                 self.access_token = response['access_token']
-                #QMessageBox.about(self, "温馨提示", "登录成功")
+                QMessageBox.about(self, "温馨提示", "登录成功")
                 self.save_info()
                 # 通过验证，关闭对话框并返回1
 
