@@ -209,6 +209,7 @@
     <addaction name="actiondelgroup"/>
     <addaction name="actionadduser"/>
     <addaction name="actiondeluser"/>
+    <addaction name="actioninput_student"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_4"/>
@@ -268,6 +269,11 @@
   <action name="actiondeluser">
    <property name="text">
     <string>查看学生</string>
+   </property>
+  </action>
+  <action name="actioninput_student">
+   <property name="text">
+    <string>批量导入学生（通过excel表）</string>
    </property>
   </action>
  </widget>

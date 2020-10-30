@@ -6,31 +6,30 @@ import cv2
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5 import QtGui
 from adduser import Ui_Dialog
-from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QFileDialog, QCompleter, QInputDialog, QLineEdit
+from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QFileDialog, QCompleter, QInputDialog, QLineEdit, \
+    QApplication, QMessageBox, QGroupBox
 from cameravideo import camera
 import pandas as pd
 class adduserwindow(Ui_Dialog,QDialog):
     def __init__(self,group,parent=None):
         super(adduserwindow,self).__init__(parent)
         self.setupUi(self)
+        # 定义一个布尔变量，用来互斥抓拍照片和打开摄像头
+        self.status = True
         self.group = group
-        # 把组信息显示在列表框中
-        self.show_list(group)
-        # 选择照片按钮
+        #抓拍按钮变成灰色
+        self.pushButton.setEnabled(False)
+        # 选择启动摄像头按钮
+        self.pushButton_6.clicked.connect(self.open_camera)
+        # 抓拍照片按钮
         self.pushButton.clicked.connect(self.get_cameradata)
+        # 导入图片按钮
+        self.pushButton_5.clicked.connect(self.get_picture)
         #确定按钮
         self.pushButton_2.clicked.connect(self.get_data_close)
         #取消按钮
         self.pushButton_3.clicked.connect(self.close_window)
-        #导入数据按钮
-        self.pushButton_4.clicked.connect(self.import_data)
-        #导入图片按钮
-        self.pushButton_5.clicked.connect(self.get_picture)
-        #调用显示数据的函数（从数据库中获取得到）
-        self.show_data()
-        # 选择启动摄像头按钮
-        self.pushButton_6.clicked.connect(self.open_camera)
-
+        self.groupBox.setStyleSheet('QGroupBox{border:2px,clolor:green}')
 
     #启动摄像头
     def open_camera(self):
@@ -38,12 +37,16 @@ class adduserwindow(Ui_Dialog,QDialog):
         self.cameravideo = camera()
         # 让摄像头自适应
         self.label.setScaledContents(True)
-        # 用到定时器 0ms启动一次
+        #用到定时器 0ms启动一次
         self.time = QTimer()
         self.time.timeout.connect(self.show_cameradata)
         self.time.start(50)
-
-
+        #让按钮变成灰色
+        #self.pushButton_6.setEnabled(False)
+        #让抓拍按钮恢复使用
+        self.pushButton.setEnabled(True)
+        self.pushButton_6.setEnabled(False)
+        self.status = True
     #将摄像头的画面显示到界面中
     def show_cameradata(self):
         # 获取摄像头数据，转换数据
@@ -51,142 +54,85 @@ class adduserwindow(Ui_Dialog,QDialog):
         # 显示数据，显示画面
         self.label.setPixmap(pic)  # 将获取到的数据拿到界面中进行显示
 
-    #得到当前摄像头画面并关闭摄像头
+    #抓拍人脸，关闭摄像头
     def get_cameradata(self):
-        #camera_data得到图片
-        camera_data = self.cameravideo.read_camera()
-        # 把摄像头画面转换成图片，然后设置为base64编码
-        _, enc = cv2.imencode('.jpg', camera_data)  # 返回两个元组
-        #转换格式后保存到base64_image变量中
-        self.base64_image = base64.b64encode(enc.tobytes())
-        # 关闭定时器
-        self.time.stop()
-        #将摄像头关闭的操作
-        self.cameravideo.close_camera()
+        if self.status:
+            #camera_data得到图片
+            camera_data = self.cameravideo.read_camera()
+            # 把摄像头画面转换成图片，然后设置为base64编码
+            _, enc = cv2.imencode('.jpg', camera_data)  # 返回两个元组
+            #转换格式后保存到base64_image变量中
+            self.base64_image = base64.b64encode(enc.tobytes())
+            # 关闭定时器
+            self.time.stop()
+            #将摄像头关闭的操作
+            self.cameravideo.close_camera()
+            self.pushButton.setEnabled(False)
+            self.pushButton_6.setEnabled(True)
+            QMessageBox.about(self,"温馨提示","人脸抓拍成功，请填写下面的编号和姓名\n")
+            self.status=False
+        else:
+            QMessageBox.about(self, "温馨提示", "您已选择从照片中添加人脸")
+            return
 
     #通过打开文件来选择照片
     def get_picture(self):
-        # 首先得到图片的路径,path
-        img_path, imgType = QFileDialog.getOpenFileName(self, "打开图片", "", "*.jpg;;*.png;;All Files(*)")
-        #以只读的方式打开图片
-        f = open(img_path,'rb')
-        #将图片显示到界面上
-        jpg = QtGui.QPixmap(img_path).scaled(self.label_5.width(), self.label_5.height())
-        self.label_5.setPixmap(jpg)
-        #将图片转换为base64格式
-        self.base64_image = base64.b64encode(f.read()).decode()
-
-    # 把组信息显示在列表框中
-    def show_list(self,list):
-        self.listWidget.addItem(self.group)
+        if self.status:
+            # 首先得到图片的路径,path
+            img_path, imgType = QFileDialog.getOpenFileName(self, "打开图片", "", "*.jpg;;*.png;;All Files(*)")
+            #以只读的方式打开图片
+            if img_path:
+                f = open(img_path,'rb')
+                #将图片显示到界面上
+                jpg = QtGui.QPixmap(img_path).scaled(self.label_5.width(), self.label_5.height())
+                self.label_5.setPixmap(jpg)
+                #将图片转换为base64格式
+                self.base64_image = base64.b64encode(f.read()).decode()
+                QMessageBox.about(self, "温馨提示", "人脸选择成功，请填写下面的编号和姓名\n")
+                self.pushButton_6.setEnabled(False)
+                self.status =False
+            else:
+                return
+        else:
+            QMessageBox.about(self, "信息提示", "您已选择从摄像头获取人脸")
+            return
     #确定按钮功能
     def get_data_close(self):
-        #选择的哪个用户组,注意currentItem()有括号！！！
-        self.group_id = self.group
-        self.user_id = self.lineEdit.text()
-        self.msg_name = self.lineEdit_2.text()
-        self.msg_department = self.lineEdit_3.text()
+        #如果status为真，说明用户至少选择了一项进行添加人脸
+        if self.status==False:
+            if self.lineEdit.text() and self.lineEdit_2.text():
+                #选择的哪个用户组,注意currentItem()有括号！！！
+                self.group_id = self.group
+                self.user_id = self.lineEdit.text()
+                self.msg_name = self.lineEdit_2.text()
 
-        #如果是自己手动添加信息，也需要写入数据库
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        print("ok1")
-        c.execute("INSERT INTO '" + self.table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.msg_department))
-        conn.commit()
-        print("ok2")
-
-        # 点确定后应该关闭对话框
+                #如果是自己手动添加信息，也需要写入数据库
+                conn = sqlite3.connect('my.db')
+                c = conn.cursor()
+                table = self.group+'_student'
+                cursor = c.execute("select * from '"+table+"'where id = '"+self.user_id+"'")
+                print("ok1")
+                if len(list(cursor)):
+                    QMessageBox.about(self, "温馨提示", "编号已经存在，请重新输入！\n")
+                    return
+                else:
+                    c.execute("INSERT INTO '" + table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.group))
+                    conn.commit()
+            else:
+                QMessageBox.about(self,"温馨提示","姓名或编号还没有输入")
+                return
+        else:
+            QMessageBox.about(self,"温馨提示","还未选择人脸")
+            return
         self.accept()
 
     #取消按钮功能
     def close_window(self):
-        #取消调用reject()函数，直接关闭对话框
-        # 关闭定时器
-        self.time.stop()
-        # 将摄像头关闭的操作
-        self.cameravideo.close_camera()
         self.reject()
 
-
-    def import_data(self):
-        # 打开对话框，获取要导出的数据的文件名
-        # 获取excel表中的数据
-        # "./test.xls"也行
-        #先选择将学生添加到哪一个班级
-        filename, rel = QFileDialog.getOpenFileName(self, "导入数据", ".", "EXCEL(*.*)")
-        print(filename)
-        path = filename
-        data = pd.read_excel(path, None)
-
-        print(data.keys())
-        for sh_name in data.keys():
-            print('sheet_name的名字是：', sh_name)
-            sh_data = pd.DataFrame(pd.read_excel(path, sh_name))
-            print(type(sh_data))
-            #将pand.DataFrame类型转换为字典类型
-            #id_name = sh_data.to_dict()
-            #这里为什么只能显示两个值？？字典形式
-            self.id_name= sh_data.set_index('学号').T.to_dict(orient='records')
-            #self.id_name_2 = sh_data.set_index('班级').T.to_dict(orient='records')
-            #print(self.id_name)
-            # 将导入的数据存入到数据库my.db的student中
-            conn = sqlite3.connect('my.db')
-            # 创建游标方便执行命令
-            c = conn.cursor()
-            #c.execute('CREATE TABLE STUDENT_1(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL)')
-            #print("ok1")
-            #将值取出来并放入表中
-            self.table = self.group + '_STUDENT'
-            for i in self.id_name[0].items():
-                print(i[0])
-                print(i[1])
-                c.execute("INSERT INTO '" + self.table + "'(ID,NAME) VALUES (?,?)", (i[0], i[1]))
-                print("ok1")
-                #print(i[2])
-            for l in self.id_name[1].items():
-                print(l[0])
-                print(l[1])
-                #这里采用更新语句加入班级
-                c.execute("update '" + self.table + "' set class = ? where id = ?",(l[1],l[0]))
-                print("ok2")
-            conn.commit()
-            print("导入数据到数据库成功！")
-
-    #写一个函数从数据库中获取信息并显示到表单中
-    def show_data(self):
-            #从数据库中取出数据
-            conn = sqlite3.connect('my.db')
-            c = conn.cursor()
-            self.table = self.group+'_STUDENT'
-            cursor = c.execute("select name from '"+self.table+"'")
-            data = []
-            for l in cursor:
-                #print(l[0])
-                #添加数据到列表中
-                data.append(l[0])
-                self.comboBox.addItem(l[0])
-            self.comboBox.setCurrentIndex(-1)
-            # 增加自动补全
-            self.completer = QCompleter(data)
-            self.completer.setFilterMode(Qt.MatchContains)
-            self.completer.setCompletionMode(QCompleter.PopupCompletion)
-            self.comboBox.setCompleter(self.completer)
-            self.comboBox.currentIndexChanged.connect(self.selchange)
-
-
-    #函数用来将鼠标选中的信息显示到文本框中
-    def selchange(self):
-        name = self.comboBox.currentText()
-        self.lineEdit_2.setText(name)
-        #根据姓名来查找学号
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        #从数据库中查找
-        cursor = c.execute("select id,class from '"+self.table+"' where name = '"+name+"'")
-        for l in cursor:
-            id = str(l[0])
-            class_ = str(l[1])
-        print(class_)
-        self.lineEdit.setText(id)
-        #默认部门是信息科学与工程学院
-        self.lineEdit_3.setText(class_)
+    #设置按钮为灰色
+    def btnsetdisabled(self, btn):
+        if btn.isEnabled():
+            btn.setEnabled(False)
+        else:
+            btn.setEnabled(True)

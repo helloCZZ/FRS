@@ -3,6 +3,8 @@ import sqlite3
 import sys
 import cv2
 import requests
+import pandas as pd
+import xlrd
 from PyQt5.QtGui import QPixmap, QImage
 from mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QInputDialog, QLineEdit
@@ -69,7 +71,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.actiondeluser.triggered.connect(self.deluser)
         #签到成功信息查看
         self.actionsave.triggered.connect(self.on_actionsave)
-
+        #批量导入学生信息
+        self.actioninput_student.triggered.connect(self.input_student)
         #播放视频信息
         video = 'mlxtj.mp4'  # 加载视频文件
         self.cap = cv2.VideoCapture(video)
@@ -97,34 +100,36 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 选择签到的班级,先通过函数获取到已经存在的班级
         list = self.getlist()
         # 返回值是一个元组，只需要第一个值,设置输入框的默认值是"class1"
-        group, ret = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
+        group,ok = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
+        if ok:
+            # 启动摄像头
+            self.cameravideo = camera()  # 创建摄像头这个类
+            # 互斥信号量
+            self.camera_status = True
 
-        # 启动摄像头
-        self.cameravideo = camera()  # 创建摄像头这个类
-        # 互斥信号量
-        self.camera_status = True
+            # 启动检测线程,解决卡顿问题
+            self.create_thread(group)
+            # 启动定时器，进行定时，每隔10ms进行一次获取摄像头数据进行显示
+            # timeshow定时器用作显示画面
+            self.timeshow = QTimer(self)
+            self.timeshow.start(30)
+            # 10ms后定时器启动，产生一个timeout信号，.connect()关联槽函数
+            self.timeshow.timeout.connect(self.show_cameradata)
 
-        # 启动检测线程,解决卡顿问题
-        self.create_thread(group)
-        # 启动定时器，进行定时，每隔10ms进行一次获取摄像头数据进行显示
-        # timeshow定时器用作显示画面
-        self.timeshow = QTimer(self)
-        self.timeshow.start(30)
-        # 10ms后定时器启动，产生一个timeout信号，.connect()关联槽函数
-        self.timeshow.timeout.connect(self.show_cameradata)
+            # facedetecttime定时器设置检测画面获取
+            # 当打开摄像头时，创建定时器500ms，用于获取检测的画面
+            self.facedetecttime = QTimer(self)
+            self.facedetecttime.start(500)
+            self.facedetecttime.timeout.connect(self.get_cameradata)  # 关联检测人脸信息函数
+            # 通过信号将画面传给线程,每500ms传一次信号，调用线程的get_base64函数，将画面传给线程
+            self.detect_data_signal.connect(self.detectThread.get_base64)
 
-        # facedetecttime定时器设置检测画面获取
-        # 当打开摄像头时，创建定时器500ms，用于获取检测的画面
-        self.facedetecttime = QTimer(self)
-        self.facedetecttime.start(500)
-        self.facedetecttime.timeout.connect(self.get_cameradata)  # 关联检测人脸信息函数
-        # 通过信号将画面传给线程,每500ms传一次信号，调用线程的get_base64函数，将画面传给线程
-        self.detect_data_signal.connect(self.detectThread.get_base64)
-
-        # 线程关联槽函数，从线程中获取到检测的结果，并关联槽函数get_cetectdata用于在界面上显示画面
-        self.detectThread.transmit_data.connect(self.get_detectdata)
-        # 线程里面人脸搜索返回的结果关联槽函数
-        self.detectThread.search_data.connect(self.get_search_data)
+            # 线程关联槽函数，从线程中获取到检测的结果，并关联槽函数get_cetectdata用于在界面上显示画面
+            self.detectThread.transmit_data.connect(self.get_detectdata)
+            # 线程里面人脸搜索返回的结果关联槽函数
+            self.detectThread.search_data.connect(self.get_search_data)
+        else:
+            return
 
     #退出签到，槽函数
     def on_actionclose(self):
@@ -394,34 +399,37 @@ class mywindow(Ui_MainWindow,QMainWindow):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/add"
         #这里设置一下，可以在界面上自己输入用户组
         #打开对话框，进行输入用户组,group是一个元组,只需要第一个数据
-        group,ret = QInputDialog.getText(self,"添加班级","请输入班级(由数字、字母、下划线组成)")
-
-        params = {
-                 "group_id":group
-        }
-        access_token = self.access_token
-        request_url = request_url + "?access_token=" + access_token
-        headers = {'content-type': 'application/json'}
-        response = requests.post(request_url, data=params, headers=headers)
-        if response:
-            message = response.json()
-            if message['error_code'] == 0:
-                QMessageBox.about(self,"班级添加结果","班级添加成功")
-            else:
-                QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
-        #创建两张表
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        # 添加班级学生表，class3_STUDENT
-        table_1 = group+'_STUDENT'
-        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
-        #添加班级学生签到表 class3_STUDENT_SINGN
-        table_2 = group+'_STUDENT_SIGN'
-        #签到成功表包含：学号，姓名，班级，签到日期
-        c.execute("CREATE TABLE '"+table_2+"'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
-        conn.commit()
-        print("创表成功！")
-        print("添加班级成功！")
+        group,ok = QInputDialog.getText(self,"添加班级","请输入班级(由数字、字母、下划线组成)")
+        if ok:
+            params = {
+                     "group_id":group
+            }
+            access_token = self.access_token
+            request_url = request_url + "?access_token=" + access_token
+            headers = {'content-type': 'application/json'}
+            response = requests.post(request_url, data=params, headers=headers)
+            if response:
+                message = response.json()
+                if message['error_code'] == 0:
+                    QMessageBox.about(self,"班级添加结果","班级添加成功")
+                else:
+                    QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
+                    return
+            #创建两张表
+            conn = sqlite3.connect('my.db')
+            c = conn.cursor()
+            # 添加班级学生表，class3_STUDENT
+            table_1 = group+'_STUDENT'
+            c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+            #添加班级学生签到表 class3_STUDENT_SINGN
+            table_2 = group+'_STUDENT_SIGN'
+            #签到成功表包含：学号，姓名，班级，签到日期
+            c.execute("CREATE TABLE '"+table_2+"'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+            conn.commit()
+            print("创表成功！")
+            print("添加班级成功！")
+        else:
+            return
 
 
     #删除用户组
@@ -431,31 +439,35 @@ class mywindow(Ui_MainWindow,QMainWindow):
         list = self.getlist()
 
         #提示可以删除哪些用户组的对话框
-        group,ret = QInputDialog.getText(self,"存在的班级","班级信息\n"+str(list['result']['group_id_list']))
-        params = {
-            "group_id":group#要删除的用组织Id
-        }
-        access_token = self.access_token
-        request_url = request_url + "?access_token=" + access_token
-        headers = {'content-type': 'application/json'}
-        response = requests.post(request_url, data=params, headers=headers)
-        if response:
-             data = response.json()
-             if data['error_code'] == 0:
-                QMessageBox.about(self,"班级删除","删除成功")
-             else:
-                QMessageBox.about(self, "用户组删除", "删除失败")
-        #删除两张表
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        table_1 = group + '_STUDENT'
-        c.execute("drop TABLE '" + table_1 + "'")
-        print("ok1")
-        table_2 = group + '_STUDENT_SIGN'
-        c.execute("drop TABLE '" + table_2 + "'")
-        print("删表成功！")
-        print("删除班级成功！")
-        conn.commit()
+        group,ok = QInputDialog.getText(self,"存在的班级","班级信息\n"+str(list['result']['group_id_list']))
+        if ok:
+            params = {
+                "group_id":group#要删除的用组织Id
+            }
+            access_token = self.access_token
+            request_url = request_url + "?access_token=" + access_token
+            headers = {'content-type': 'application/json'}
+            response = requests.post(request_url, data=params, headers=headers)
+            if response:
+                 data = response.json()
+                 if data['error_code'] == 0:
+                    QMessageBox.about(self,"班级删除","删除成功")
+                 else:
+                    QMessageBox.about(self, "用户组删除", "删除失败")
+                    return
+            #删除两张表
+            conn = sqlite3.connect('my.db')
+            c = conn.cursor()
+            table_1 = group + '_STUDENT'
+            c.execute("drop TABLE '" + table_1 + "'")
+            print("ok1")
+            table_2 = group + '_STUDENT_SIGN'
+            c.execute("drop TABLE '" + table_2 + "'")
+            print("删表成功！")
+            print("删除班级成功！")
+            conn.commit()
+        else:
+            return
     #用户组查询
     def getlist(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getlist"
@@ -491,17 +503,21 @@ class mywindow(Ui_MainWindow,QMainWindow):
         i = ''
         for l in list['result']['group_id_list']:
             i=i+l+' '
-        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i,QLineEdit.Normal, "class1")
-        #再次打开添加人脸窗口
-        while(1):
-            self.window = adduserwindow(group, self)
-            # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
-            # 窗口关闭时会有一个结束的标志
-            window_status = self.window.exec_()
-            # 根据返回值（选择项）不同进行优化,窗口不会有错误变化
-            if window_status != 1:
-                return
-            self.adduser_1()
+        self.g = i
+        group, ok = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + self.g,QLineEdit.Normal, "class1")
+        if ok:
+            #再次打开添加人脸窗口
+            while(1):
+                self.window = adduserwindow(group, self)
+                # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
+                # 窗口关闭时会有一个结束的标志
+                window_status = self.window.exec_()
+                # 根据返回值（选择项）不同进行优化,窗口不会有错误变化
+                if window_status != 1:
+                    return
+                self.adduser_1()
+        else:
+            return
 
 
     #添加用户(人脸注册)
@@ -603,6 +619,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
             print("删除成功")
         else:
             print("删除失败")
+            return
         '''
             提示删除成功或者失败
             print(status['error_msg'])
@@ -630,9 +647,12 @@ class mywindow(Ui_MainWindow,QMainWindow):
         i = ''
         for l in list['result']['group_id_list']:
             i = i + l + ' '
-        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
-        window_3 = sign_sussesswindow(group,self)
-        status = window_3.exec_()
+        group, ok = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
+        if ok:
+            window_3 = sign_sussesswindow(group,self)
+            status = window_3.exec_()
+        else:
+            return
 
     #播放广告视频
     def playVideo(self):
@@ -652,3 +672,45 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 由于上面的形式不适合图像显示，故还需要转换格式
         qpixmap = QPixmap.fromImage(qimg)
         return qpixmap
+
+    #批量导入学生数据
+    def input_student(self):
+        list = self.getlist()
+        i = ''
+        for l in list['result']['group_id_list']:
+            i = i + l + ' '
+        group, ok = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i,QLineEdit.Normal, "class1")
+        if ok:
+            filename, rel = QFileDialog.getOpenFileName(self, "导入数据", ".", "EXCEL(*.*)")
+            path = filename
+            data = pd.read_excel(path, None)
+            for sh_name in data.keys():
+                sh_data = pd.DataFrame(pd.read_excel(path, sh_name))
+                id_name = sh_data.set_index('学号').T.to_dict(orient='records')
+                conn = sqlite3.connect('my.db')
+                c = conn.cursor()
+                table = group + '_STUDENT'
+                for i in id_name[0].items():
+                    cur_1=c.execute("select * from '"+table+"' where id = ?",(i[0],))
+                    print("ok")
+                    if (len(list(cur_1))):
+                        pass
+                    else:
+                        print("OK1")
+                        c.execute("INSERT INTO '" + table + "'(ID,NAME) VALUES (?,?)", (i[0], i[1]))
+
+                for l in id_name[1].items():
+                    cur_2 = c.execute("select * from '" + table + "'where id = ?",(l[0],))
+                    if len(list(cur_2)):
+                        return
+                    else:
+                        c.execute("update '" + table + "' set class = ? where id = ?", (l[1], l[0]))
+                    print("ok2")
+                conn.commit()
+                QMessageBox.about(self,"温馨提示","学生批量添加成功\n")
+
+
+            else:
+                return
+        else:
+            return

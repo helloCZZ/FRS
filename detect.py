@@ -9,7 +9,7 @@ import cv2
 import sqlite3
 import requests
 from PyQt5.QtCore import QThread, QTimer, pyqtSignal, QDateTime
-
+#
 #线程进行执行，只会执行线程类中的run函数，如果有新的功能需要实现，需要重新写一个run函数完成
 class detect_thread(QThread):#新的线程类，并继承QThread
     #创建信号槽，字典类型

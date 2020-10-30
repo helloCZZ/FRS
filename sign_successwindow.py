@@ -75,7 +75,7 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
         cursor = c.execute("select * from '" + self.table_2 + "' where id not in(select id from '" + self.table + "')")
         print("查询成功")
         workbook = xlwt.Workbook()  # 新建一个工作簿
-        sheet = workbook.add_sheet("data")  # 在工作簿中新建一个表格
+        sheet = workbook.add_sheet("Sheet1")  # 在工作簿中新建一个表格
         print("Ok1")
         # rowcount = cursor.rowcount
         i = 2
