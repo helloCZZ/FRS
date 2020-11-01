@@ -19,16 +19,13 @@ class sign_data(Ui_Dialog,QDialog):
             rowcount = self.tableWidget.rowCount()
             self.tableWidget.insertRow(rowcount)
 
-            #插入数据
-            self.tableWidget.setItem(rowcount,0,QTableWidgetItem(i['user_id']))
-            self.tableWidget.setItem(rowcount,1,QTableWidgetItem(info[0][3:]))
-            self.tableWidget.setItem(rowcount,2,QTableWidgetItem(info[1][3:]))
-            self.tableWidget.setItem(rowcount,3,QTableWidgetItem(i['datetime']))
-
-            self.save_tosqlite3(i['user_id'],info[0][3:],info[1][3:],i['datetime'])
+            # 插入数据
+            self.tableWidget.setItem(rowcount, 0, QTableWidgetItem(i['user_id']))
+            self.tableWidget.setItem(rowcount, 1, QTableWidgetItem(info[0][3:]))
+            #self.tableWidget.setItem(rowcount, 2, QTableWidgetItem(info[1][3:]))
+            self.tableWidget.setItem(rowcount, 3, QTableWidgetItem(i['datetime']))
 
         #关于两个按钮的功能，都是关闭，但是关闭之前完成什么工作
-        self.pushButton.clicked.connect(self.save_data)
 
         self.pushButton_2.clicked.connect(self.close_window)
 
@@ -42,16 +39,16 @@ class sign_data(Ui_Dialog,QDialog):
     def close_window(self):
         self.reject()
 
-    #将签到成功的数据写入sqlite3中
-    def save_tosqlite3(self,id,name,department,datetime):
-        self.id = id
-        self.name = name
-        self.department = department
-        self.datetime = str(datetime)
-        print(self.datetime)
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        #c.execute('CREATE TABLE STUDENT_2(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,DEPARTMENT TEXT NOT NULL,DATE TXET NOT NULL)')
-        c.execute("INSERT INTO STUDENT_2(ID,NAME,DEPARTMENT,DATE) VALUES (?,?,?,?)",(self.id,self.name,self.department,self.datetime))
-        conn.commit()
-        print("test3")
+    # #将签到成功的数据写入sqlite3中
+    # def save_tosqlite3(self,id,name,department,datetime):
+    #     self.id = id
+    #     self.name = name
+    #     self.department = department
+    #     self.datetime = str(datetime)
+    #     print(self.datetime)
+    #     conn = sqlite3.connect('my.db')
+    #     c = conn.cursor()
+    #     #c.execute('CREATE TABLE STUDENT_2(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,DEPARTMENT TEXT NOT NULL,DATE TXET NOT NULL)')
+    #     c.execute("INSERT INTO STUDENT_2(ID,NAME,DEPARTMENT,DATE) VALUES (?,?,?,?)",(self.id,self.name,self.department,self.datetime))
+    #     conn.commit()
+    #     print("test3")

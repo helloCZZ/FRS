@@ -36,11 +36,13 @@ class mywindow(Ui_MainWindow,QMainWindow):
     #定义一个布尔变量，用于充当点击签到和添加用户两个操作的互斥信号（摄像头不能充当，为什么）
     camera_status = False
 
+
     # 初始化函数
-    def __init__(self,token):#初始化
+    def __init__(self):#初始化
         super(mywindow,self).__init__()
         self.setupUi(self)#创建界面内容
 
+        self.systemIsOpen = False
         # 设置一个初始值，后续用来实现：30秒无人脸就进行广告播放
         self.noFaceNum = 0
         #设置时间，用来，当未检测到人脸时，实现配置文件中的定时时间到了后，自动切换到广告播放
@@ -49,7 +51,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
 
-        self.access_token = token
+        self.get_accesstoken()
         #cz 获取公共视频播放列表
         videoList = os.listdir("video/ID0000")
         url = QUrl()
@@ -160,73 +162,80 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 选择签到的班级,先通过函数获取到已经存在的班级
         list = self.getlist()
         # 返回值是一个元组，只需要第一个值,设置输入框的默认值是"class1"
-        group, ret = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
 
-        # 启动摄像头
-        self.cameravideo = camera()  # 创建摄像头这个类
-        # 互斥信号量
-        self.camera_status = True
+        group, ret = QInputDialog.getItem(self, "选择签到班级", "请选择如下班级进行签到：\n" ,list['result']['group_id_list'],0)
+        #group, ret = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
+        if ret:
+            # 启动摄像头
+            self.cameravideo = camera()  # 创建摄像头这个类
+            # 互斥信号量
+            self.camera_status = True
 
-        # 启动检测线程,解决卡顿问题
-        self.create_thread(group)
-        # 启动定时器，进行定时，每隔10ms进行一次获取摄像头数据进行显示
-        # timeshow定时器用作显示画面
-        self.timeshow = QTimer(self)
-        self.timeshow.start(30)
-        # 10ms后定时器启动，产生一个timeout信号，.connect()关联槽函数
-        self.timeshow.timeout.connect(self.show_cameradata)
+            # 启动检测线程,解决卡顿问题
+            self.create_thread(group)
+            # 启动定时器，进行定时，每隔10ms进行一次获取摄像头数据进行显示
+            # timeshow定时器用作显示画面
+            self.timeshow = QTimer(self)
+            self.timeshow.start(30)
+            # 10ms后定时器启动，产生一个timeout信号，.connect()关联槽函数
+            self.timeshow.timeout.connect(self.show_cameradata)
 
-        # facedetecttime定时器设置检测画面获取
-        # 当打开摄像头时，创建定时器500ms，用于获取检测的画面
-        self.facedetecttime = QTimer(self)
-        self.facedetecttime.start(500)
-        self.facedetecttime.timeout.connect(self.get_cameradata)  # 关联检测人脸信息函数
-        # 通过信号将画面传给线程,每500ms传一次信号，调用线程的get_base64函数，将画面传给线程
-        self.detect_data_signal.connect(self.detectThread.get_base64)
+            # facedetecttime定时器设置检测画面获取
+            # 当打开摄像头时，创建定时器500ms，用于获取检测的画面
+            self.facedetecttime = QTimer(self)
+            self.facedetecttime.start(500)
+            self.facedetecttime.timeout.connect(self.get_cameradata)  # 关联检测人脸信息函数
+            # 通过信号将画面传给线程,每500ms传一次信号，调用线程的get_base64函数，将画面传给线程
+            self.detect_data_signal.connect(self.detectThread.get_base64)
 
-        # 线程关联槽函数，从线程中获取到检测的结果，并关联槽函数get_cetectdata用于在界面上显示画面
-        self.detectThread.transmit_data.connect(self.get_detectdata)
-        # 线程里面人脸搜索返回的结果关联槽函数
-        self.detectThread.search_data.connect(self.get_search_data)
+            # 线程关联槽函数，从线程中获取到检测的结果，并关联槽函数get_cetectdata用于在界面上显示画面
+            self.detectThread.transmit_data.connect(self.get_detectdata)
+            # 线程里面人脸搜索返回的结果关联槽函数
+            self.detectThread.search_data.connect(self.get_search_data)
+            self.systemIsOpen = True
 
     #退出签到，槽函数
     def on_actionclose(self):
-        print("关闭定时器2")
-        #关闭定时器2
-        self.facedetecttime.stop()
-        #下面三条语句老师讲可写可不写，但如果我这里写上点击退出签到时会有问题，故不写
-        #self.facedetecttime.timeout().disconnect(self.get_cameradata)
-        #self.detect_data_signal.disconnect(self.detectThread.get_base64)
-        #self.detectThread.transmit_data.connect(self.get_detectdata)
-        #关闭检测线程
-        #退出线程的run函数
-        self.detectThread.ok = False
-        #线程结束 返回Fslse
-        self.detectThread.quit()
-        self.detectThread.wait()
+        if self.systemIsOpen:
+            print("关闭定时器2")
+            #关闭定时器2
+            self.facedetecttime.stop()
+            #下面三条语句老师讲可写可不写，但如果我这里写上点击退出签到时会有问题，故不写
+            #self.facedetecttime.timeout().disconnect(self.get_cameradata)
+            #self.detect_data_signal.disconnect(self.detectThread.get_base64)
+            #self.detectThread.transmit_data.connect(self.get_detectdata)
+            #关闭检测线程
+            #退出线程的run函数
+            self.detectThread.ok = False
+            #线程结束 返回Fslse
+            self.detectThread.quit()
+            self.detectThread.wait()
 
-        #关闭定时器1，不再去获取摄像头进行数据显示
-        self.timeshow.stop()
-        # 关闭摄像头
-        self.cameravideo.close_camera()
+            #关闭定时器1，不再去获取摄像头进行数据显示
+            self.timeshow.stop()
+            # 关闭摄像头
+            self.cameravideo.close_camera()
 
-        #设置互斥信号量
-        self.camera_status = False
-        # 显示本次签到情况,签到数据从线程的字典中拿出来
-        # 创建一个类,并将线程传过来的数据交个窗口
-        print(self.detectThread.sign_list)
+            #设置互斥信号量
+            self.camera_status = False
+            # 显示本次签到情况,签到数据从线程的字典中拿出来
+            # 创建一个类,并将线程传过来的数据交个窗口
+            print(self.detectThread.sign_list)
 
-        signdata = sign_data(self.detectThread.sign_list)
-        signdata.exec_()
-        # 关初始化状态
-        # 摄像头的一个定时器和检测画面的一个定时器同时关闭时才清空
-        if self.timeshow.isActive() == False and self.facedetecttime.isActive() == False:
-            print("关闭成功")
-            #self.label.setPixmap(QPixmap("./init.jpg"))
-            self.plainTextEdit.clear()
-            self.plainTextEdit_2.clear()
-        else:
-            print("关闭失败，存在部分窗口没有关闭")
+            self.player.pause()
+            self.player2.pause()
+
+            signdata = sign_data(self.detectThread.sign_list)
+            signdata.exec_()
+            # 关初始化状态
+            # 摄像头的一个定时器和检测画面的一个定时器同时关闭时才清空
+            if self.timeshow.isActive() == False and self.facedetecttime.isActive() == False:
+                print("关闭成功")
+                #self.label.setPixmap(QPixmap("./init.jpg"))
+                self.plainTextEdit.clear()
+                self.plainTextEdit_2.clear()
+            else:
+                print("关闭失败，存在部分窗口没有关闭")
 
 
     '''
@@ -504,22 +513,25 @@ class mywindow(Ui_MainWindow,QMainWindow):
         if response:
             message = response.json()
             if message['error_code'] == 0:
+                # 创建两张表
+                conn = sqlite3.connect('my.db')
+                c = conn.cursor()
+                # 添加班级学生表，class3_STUDENT
+                table_1 = group + '_STUDENT'
+                c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+                # 添加班级学生签到表 class3_STUDENT_SINGN
+                table_2 = group + '_STUDENT_SIGN'
+                # 签到成功表包含：学号，姓名，班级，签到日期
+                c.execute(
+                    "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+                conn.commit()
+                print("创表成功！")
+                print("添加班级成功！")
                 QMessageBox.about(self,"班级添加结果","班级添加成功")
+
             else:
                 QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
-        #创建两张表
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        # 添加班级学生表，class3_STUDENT
-        table_1 = group+'_STUDENT'
-        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
-        #添加班级学生签到表 class3_STUDENT_SINGN
-        table_2 = group+'_STUDENT_SIGN'
-        #签到成功表包含：学号，姓名，班级，签到日期
-        c.execute("CREATE TABLE '"+table_2+"'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
-        conn.commit()
-        print("创表成功！")
-        print("添加班级成功！")
+
 
 
     #删除用户组
@@ -617,7 +629,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
             #新用户id
             "user_id":self.window.user_id,
             #用户信息
-            "user_info":'姓名:'+self.window.msg_name+'\n'+'\n'+'部门:'+self.window.msg_department
+            "user_info":'姓名:'+self.window.msg_name
         }
         access_token = self.access_token
         request_url = request_url + "?access_token=" + access_token

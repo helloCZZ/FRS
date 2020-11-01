@@ -95,6 +95,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
         response = requests.post(request_url, data=params, headers=headers)
         if response:
             data = response.json()
+            print(data)
             #做一个判断：如果没有检测到人脸，将错误代码返还回去，注意需要有return语句
             if data['error_code'] !=0:
                 self.transmit_data.emit(data)
@@ -131,6 +132,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
         response = requests.post(request_url, data=params, headers=headers)
         if response:
             data = response.json()
+            print(data)
             if data['error_code'] == 0:
                 #判断相似度是否大于90，大于能用，否则不能用
                 if data['result']['user_list'][0]['score']>90:
