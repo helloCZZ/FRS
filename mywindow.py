@@ -17,6 +17,7 @@ from detect import detect_thread#导入自己写的线程
 from adduserwindow import adduserwindow#将用户窗口导入主窗口
 from delfacewindow import delfacewindow#将删除用户窗口导入主窗口
 from data_show import sign_data
+from recordVideo import recordVideo
 from sign_successwindow import sign_sussesswindow
 from playsound import playsound
 import time
@@ -47,7 +48,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.noFaceNum = 0
         #设置时间，用来，当未检测到人脸时，实现配置文件中的定时时间到了后，自动切换到广告播放
         self.timeToChangeVideo = QSettings('config.ini', QSettings.IniFormat).value("timeToChangeVideo")
-        print(self.timeToChangeVideo)
+        #获取配置文件中百度api参数
+        self.client_id = QSettings('config.ini', QSettings.IniFormat).value("API_Key")
+        self.client_secret = QSettings('config.ini', QSettings.IniFormat).value("Secret_Key")
+
+        self.isRecord = QSettings('config.ini', QSettings.IniFormat).value("recordVideo")
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
 
@@ -134,6 +139,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # video = 'mlxtj.mp4'  # 加载视频文件
         # self.cap = cv2.VideoCapture(video)
 
+
     #创建线程函数完成检测,参数有:令牌,列表（用来存放签到成功的数据）
     def create_thread(self,group):
         self.detectThread = detect_thread(self.access_token,group)
@@ -163,11 +169,18 @@ class mywindow(Ui_MainWindow,QMainWindow):
         list = self.getlist()
         # 返回值是一个元组，只需要第一个值,设置输入框的默认值是"class1"
 
-        group, ret = QInputDialog.getItem(self, "选择签到班级", "请选择如下班级进行签到：\n" ,list['result']['group_id_list'],0)
+        group, ret = QInputDialog.getItem(self, "选择签到用户组", "请选择如下用户组进行签到：\n" ,list['result']['group_id_list'],0)
         #group, ret = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
         if ret:
             # 启动摄像头
             self.cameravideo = camera()  # 创建摄像头这个类
+
+            #todo
+            #2020-11-02 cz
+            # 视频录制线程
+            if self.isRecord:
+                self.record_Video = recordVideo(self.cameravideo.capture)
+
             # 互斥信号量
             self.camera_status = True
 
@@ -210,7 +223,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
             #线程结束 返回Fslse
             self.detectThread.quit()
             self.detectThread.wait()
-
             #关闭定时器1，不再去获取摄像头进行数据显示
             self.timeshow.stop()
             # 关闭摄像头
@@ -224,6 +236,13 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
             self.player.pause()
             self.player2.pause()
+
+            #停止录象线程
+            if self.isRecord:
+                if self.record_Video.isRunning():
+                    self.record_Video.stop()
+                    self.record_Video.quit()
+                    self.record_Video.wait()
 
             signdata = sign_data(self.detectThread.sign_list)
             signdata.exec_()
@@ -309,13 +328,15 @@ class mywindow(Ui_MainWindow,QMainWindow):
     #获取accesstoken（访问令牌）的槽函数
     def get_accesstoken(self):
         #host是字符串对象，存储的是授权服务地址----获取accesstoken的地址
-        host = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=HtoZ9pM4HsG7GGEldsbwjOCq&client_secret=3H7vVG5uXklMPRaMeWIA2RwmG30jqk9G'
+        host = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id='+self.client_id+'&client_secret='+self.client_secret
         #发送网络请求 requests 网络库
         #使用get函数发送网络请求，参数为网络请求地址，执行时会返回执行结果，
         response = requests.get(host)
         if response:
             response= response.json()
             self.access_token = response['access_token']
+        else:
+            print("错误的百度API_key或Secret_Key")
             #print(self.access_token)
 
     #槽函数，获取检测数据
@@ -335,7 +356,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 return
             else:
 
-                self.plainTextEdit_2.appendPlainText("检测到学生人脸信息\n")
+                self.plainTextEdit_2.appendPlainText("检测到用户人脸信息\n")
             # 人脸信息：data['result']['face_list']，是列表，每个数据是一个字典
             # 取每个人脸信息 data['result']['face_list'][0-i]
             # 循环取出所有人脸信息
@@ -357,7 +378,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 #print("location"+str(left))
 
                 #往窗口中添加文本，参数就是需要的文本信息，年龄需要转换成字符串
-                self.plainTextEdit_2.appendPlainText("\n"+"第" + str(i + 1) + "个学生人脸信息\n")
+                self.plainTextEdit_2.appendPlainText("\n"+"第" + str(i + 1) + "个用户人脸信息\n")
                 self.plainTextEdit_2.appendPlainText("年龄是：" + str(age)+"\n")
                 #性别
                 if gender == 'male':
@@ -489,10 +510,21 @@ class mywindow(Ui_MainWindow,QMainWindow):
     #槽函数，接受从线程传来的数据并进行显示
     def get_search_data(self,data):
         self.plainTextEdit.setPlainText(data)
+        #获取用户id
+        #形势例如：['用户人脸识别成功!', '编号:cz', '姓名:cz']
+        if len(str(data).split("\n\n"))==3:
+            userID = str(data).split("\n\n")[1].split(":")[1]
+            # 如果录像线程没启动，就启动它
+            #todo
+            if self.isRecord:
+                if not self.record_Video.isRunning():
+                    self.record_Video.userID = userID
+                    self.record_Video.start()
+
 
 
     #添加用户组（班级）功能函数
-    #添加班级的同时创建两张表，学生表:class_*_student(*号对应班级），签到表：class_*_student_sign
+    #添加班级的同时创建两张表，用户表:class_*_student(*号对应班级），签到表：class_*_student_sign
     def add_group(self):
         '''
         创建用户组（班级）
@@ -501,7 +533,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/add"
         #这里设置一下，可以在界面上自己输入用户组
         #打开对话框，进行输入用户组,group是一个元组,只需要第一个数据
-        group,ret = QInputDialog.getText(self,"添加班级","请输入班级(由数字、字母、下划线组成)")
+        group,ret = QInputDialog.getText(self,"添加用户组","请输入用户组(由数字、字母、下划线组成)")
 
         params = {
                  "group_id":group
@@ -516,21 +548,21 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 # 创建两张表
                 conn = sqlite3.connect('my.db')
                 c = conn.cursor()
-                # 添加班级学生表，class3_STUDENT
+                # 添加班级用户表，class3_STUDENT
                 table_1 = group + '_STUDENT'
                 c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
-                # 添加班级学生签到表 class3_STUDENT_SINGN
+                # 添加班级用户签到表 class3_STUDENT_SINGN
                 table_2 = group + '_STUDENT_SIGN'
                 # 签到成功表包含：学号，姓名，班级，签到日期
                 c.execute(
                     "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
                 conn.commit()
                 print("创表成功！")
-                print("添加班级成功！")
-                QMessageBox.about(self,"班级添加结果","班级添加成功")
+                print("添加用户组成功！")
+                QMessageBox.about(self,"用户组添加结果","用户组添加成功")
 
             else:
-                QMessageBox.about(self,"班级添加结果","班级添加失败\n"+message['error_msg'])
+                QMessageBox.about(self,"用户组添加结果","用户组添加失败\n"+message['error_msg'])
 
 
 
@@ -541,7 +573,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         list = self.getlist()
 
         #提示可以删除哪些用户组的对话框
-        group,ret = QInputDialog.getText(self,"存在的班级","班级信息\n"+str(list['result']['group_id_list']))
+        group,ret = QInputDialog.getText(self,"存在的用户组","用户组信息\n"+str(list['result']['group_id_list']))
         params = {
             "group_id":group#要删除的用组织Id
         }
@@ -552,7 +584,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         if response:
              data = response.json()
              if data['error_code'] == 0:
-                QMessageBox.about(self,"班级删除","删除成功")
+                QMessageBox.about(self,"用户组删除","删除成功")
              else:
                 QMessageBox.about(self, "用户组删除", "删除失败")
         #删除两张表
@@ -564,7 +596,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         table_2 = group + '_STUDENT_SIGN'
         c.execute("drop TABLE '" + table_2 + "'")
         print("删表成功！")
-        print("删除班级成功！")
+        print("删除用户组成功！")
         conn.commit()
     #用户组查询
     def getlist(self):
@@ -586,9 +618,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         str = ''
         for i in list['result']['group_id_list']:
             str = str +'\n'+i
-        QMessageBox.about(self,"班级列表",str)
+        QMessageBox.about(self,"用户组列表",str)
 
-    #再写一个函数，为了一直打开添加学生这个窗口
+    #再写一个函数，为了一直打开添加用户这个窗口
     def adduser(self):
         # 创建一个窗口来选择这些内容
         # 在请求参数中，需要获取人脸，转换人脸编码，添加的组id，添加的用户id，新用户的id信息
@@ -599,19 +631,21 @@ class mywindow(Ui_MainWindow,QMainWindow):
         list = self.getlist()
         #首先选择班级，选择好后传到后台
         i = ''
-        for l in list['result']['group_id_list']:
-            i=i+l+' '
-        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i,QLineEdit.Normal, "class1")
+        # for l in list['result']['group_id_list']:
+        #     i=i+l+' '
+        # group, ret = QInputDialog.getText(self, "添加用户", "请选择添加用户的班级\n" + i,QLineEdit.Normal, "class1")
+        group, ret = QInputDialog.getItem(self, "选择签到用户组", "请选择如下用户组进行签到：\n", list['result']['group_id_list'], 0)
         #再次打开添加人脸窗口
-        while(1):
-            self.window = adduserwindow(group, self)
-            # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
-            # 窗口关闭时会有一个结束的标志
-            window_status = self.window.exec_()
-            # 根据返回值（选择项）不同进行优化,窗口不会有错误变化
-            if window_status != 1:
-                return
-            self.adduser_1()
+        if ret:
+            while(1):
+                self.window = adduserwindow(group,self.access_token, self)
+                # 新创建窗口，通过exec()函数一直执行，阻塞执行，窗口不进行关闭exec()函数不会退出
+                # 窗口关闭时会有一个结束的标志
+                window_status = self.window.exec_()
+                # 根据返回值（选择项）不同进行优化,窗口不会有错误变化
+                if window_status != 1:
+                    return
+                self.adduser_1()
 
 
     #添加用户(人脸注册)
@@ -723,7 +757,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         '''
 
         '''
-        group,ret = QInputDialog.getText(self,"班级获取","班级信息\n"+str(list['result']['group_id_list']))
+        group,ret = QInputDialog.getText(self,"用户组获取","用户组信息\n"+str(list['result']['group_id_list']))
         #获取用户，进行选择
         userlist = self.getuserslist(group)
         user, ret = QInputDialog.getText(self, "用户获取", "用户信息\n" + str(userlist['result']['user_id_list']))
@@ -740,7 +774,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         i = ''
         for l in list['result']['group_id_list']:
             i = i + l + ' '
-        group, ret = QInputDialog.getText(self, "添加学生", "请选择添加学生的班级\n" + i, QLineEdit.Normal, "class1")
+        group, ret = QInputDialog.getText(self, "添加用户", "请选择添加用户的用户组\n" + i, QLineEdit.Normal, "class1")
         window_3 = sign_sussesswindow(group,self)
         status = window_3.exec_()
 

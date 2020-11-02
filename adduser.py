@@ -256,6 +256,7 @@ class Ui_Dialog(object):
         font.setPointSize(16)
         self.lineEdit.setFont(font)
         self.lineEdit.setObjectName("lineEdit")
+        self.lineEdit.setPlaceholderText("六位数字")
         self.horizontalLayout_3.addWidget(self.lineEdit)
         spacerItem1 = QtWidgets.QSpacerItem(200, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem1)

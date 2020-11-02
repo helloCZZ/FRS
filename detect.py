@@ -136,6 +136,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
             if data['error_code'] == 0:
                 #判断相似度是否大于90，大于能用，否则不能用
                 if data['result']['user_list'][0]['score']>90:
+
                     #存储要保存的签到的数据，方便进行显示
                     #将相似度删除掉，不用保存
                     del[data['result']['user_list'][0]['score']]
@@ -159,23 +160,5 @@ class detect_thread(QThread):#新的线程类，并继承QThread
                     # 保存最后一次的人脸id
                     self.lastFace = user_id
                     self.search_data.emit("用户人脸识别成功!\n\n"+"编号:"+user_id+'\n\n'+user_info)
-
-                    # #将学生签到成功的信息保存到class*_student_sign表中
-                    # conn = sqlite3.connect('my.db')
-                    # c = conn.cursor()
-                    # table_1 = self.group+'_student_sign'
-                    # table_2 = self.group+'_student'
-                    # cursor = c.execute("select name,class from '"+table_2+"' where id ='"+user_id+"'")
-                    # for i in cursor:
-                    #     self.n = i[0]
-                    #     self.c_ = i[1]
-                    #     cursor_ = c.execute("select * from '" + table_1 + "' where id ='" + user_id + "'")
-                    #     l = len(list(cursor_))
-                    #     print(l)
-                    #     if l==1:
-                    #         print("ok")
-                    #     else:
-                    #         c.execute("insert into '" + table_1 + "'(id,name,date) values(?,?,?)",(user_id,self.n,datetime))
-                    #         conn.commit()
             else:
                 self.search_data.emit("用户签到不成功,找不到对应的用户")

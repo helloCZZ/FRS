@@ -15,7 +15,7 @@ class camera():
         #0表示默认的摄像头，进行打开,创建视频/摄像头操作类对象：capture
         #创建摄像头操作对象，打开摄像头
         #self. capture表示打开的摄像头对象
-        self. capture= cv2.VideoCapture(0)
+        self.capture= cv2.VideoCapture(0)
         #isOpened()函数返回一个布尔值，来判断摄像头是否初始化成功
         if self.capture.isOpened():
             print("isOpened")

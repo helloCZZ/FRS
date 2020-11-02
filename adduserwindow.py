@@ -3,6 +3,7 @@ import base64
 import sqlite3
 
 import cv2
+import requests
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5 import QtGui
 from adduser import Ui_Dialog
@@ -11,9 +12,11 @@ from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QFileDialog, QCompl
 from cameravideo import camera
 import pandas as pd
 class adduserwindow(Ui_Dialog,QDialog):
-    def __init__(self,group,parent=None):
+    def __init__(self,group,access_token,parent=None):
         super(adduserwindow,self).__init__(parent)
         self.setupUi(self)
+
+        self.access_token = access_token
         # 定义一个布尔变量，用来互斥抓拍照片和打开摄像头
         self.status = True
         self.group = group
@@ -69,7 +72,7 @@ class adduserwindow(Ui_Dialog,QDialog):
             self.cameravideo.close_camera()
             self.pushButton.setEnabled(False)
             self.pushButton_6.setEnabled(True)
-            QMessageBox.about(self,"温馨提示","人脸抓拍成功，请填写下面的编号和姓名\n")
+            QMessageBox.about(self,"温馨提示","抓拍成功，请填写下面的编号和姓名\n")
             self.status=False
         else:
             QMessageBox.about(self, "温馨提示", "您已选择从照片中添加人脸")
@@ -106,6 +109,14 @@ class adduserwindow(Ui_Dialog,QDialog):
                 self.user_id = self.lineEdit.text()
                 self.msg_name = self.lineEdit_2.text()
 
+                if (not len(self.user_id)==6) or (not self.user_id.isdigit()):
+                    QMessageBox.about(self, "温馨提示", "编号请输入6位数字！\n")
+                    return
+
+                data = self.detect_face(self.base64_image)
+                if not data['error_code'] == 0:
+                    QMessageBox.about(self, "温馨提示", "未检测到人脸！\n")
+                    return
                 #如果是自己手动添加信息，也需要写入数据库
                 conn = sqlite3.connect('my.db')
                 print("OK0")
@@ -131,3 +142,30 @@ class adduserwindow(Ui_Dialog,QDialog):
     #取消按钮功能
     def close_window(self):
         self.reject()
+
+
+    def detect_face(self,base64_image):
+
+        # 发送请求地址
+        request_url = "https://aip.baidubce.com/rest/2.0/face/v3/detect"
+        # 请求参数，是一个字典，在字典中存储了，百度AI要识别的图片信息，属性内容
+        params = {
+            "image": base64_image,  # 图片信息字符串
+            "image_type": "BASE64",  # 图片信息的格式
+            "face_field": "gender,age,beauty,expression,face_shape,glasses,emotion,mask",  # 请求识别人脸的属性，各个属性在字符串中用逗号隔开
+            "max_face_num": 1  # 最多可以检测人脸的数目为：10
+        }
+
+        # 访问令牌，已经获取到
+        access_token = self.access_token
+        # 把请求地址和访问令牌组成可用的网络地址
+        request_url = request_url + "?access_token=" + access_token
+        # 参数，设置请求格式体（字典）
+        headers = {'content-type': 'application/json'}
+        # 发送网络post请求，请求百度AI进行人脸检测，返回检测结果
+        # 发送网络请求，就会一定的等待时间，程序就会在这里阻塞执行
+        response = requests.post(request_url, data=params, headers=headers)
+        if response:
+            data = response.json()
+            print(data)
+            return data
