@@ -534,35 +534,35 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #这里设置一下，可以在界面上自己输入用户组
         #打开对话框，进行输入用户组,group是一个元组,只需要第一个数据
         group,ret = QInputDialog.getText(self,"添加用户组","请输入用户组(由数字、字母、下划线组成)")
+        if ret:
+            params = {
+                     "group_id":group
+            }
+            access_token = self.access_token
+            request_url = request_url + "?access_token=" + access_token
+            headers = {'content-type': 'application/json'}
+            response = requests.post(request_url, data=params, headers=headers)
+            if response:
+                message = response.json()
+                if message['error_code'] == 0:
+                    # 创建两张表
+                    conn = sqlite3.connect('my.db')
+                    c = conn.cursor()
+                    # 添加班级用户表，class3_STUDENT
+                    table_1 = group + '_STUDENT'
+                    c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+                    # 添加班级用户签到表 class3_STUDENT_SINGN
+                    table_2 = group + '_STUDENT_SIGN'
+                    # 签到成功表包含：学号，姓名，班级，签到日期
+                    c.execute(
+                        "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+                    conn.commit()
+                    print("创表成功！")
+                    print("添加用户组成功！")
+                    QMessageBox.about(self,"用户组添加结果","用户组添加成功")
 
-        params = {
-                 "group_id":group
-        }
-        access_token = self.access_token
-        request_url = request_url + "?access_token=" + access_token
-        headers = {'content-type': 'application/json'}
-        response = requests.post(request_url, data=params, headers=headers)
-        if response:
-            message = response.json()
-            if message['error_code'] == 0:
-                # 创建两张表
-                conn = sqlite3.connect('my.db')
-                c = conn.cursor()
-                # 添加班级用户表，class3_STUDENT
-                table_1 = group + '_STUDENT'
-                c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
-                # 添加班级用户签到表 class3_STUDENT_SINGN
-                table_2 = group + '_STUDENT_SIGN'
-                # 签到成功表包含：学号，姓名，班级，签到日期
-                c.execute(
-                    "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
-                conn.commit()
-                print("创表成功！")
-                print("添加用户组成功！")
-                QMessageBox.about(self,"用户组添加结果","用户组添加成功")
-
-            else:
-                QMessageBox.about(self,"用户组添加结果","用户组添加失败\n"+message['error_msg'])
+                else:
+                    QMessageBox.about(self,"用户组添加结果","用户组添加失败\n"+message['error_msg'])
 
 
 
@@ -573,31 +573,33 @@ class mywindow(Ui_MainWindow,QMainWindow):
         list = self.getlist()
 
         #提示可以删除哪些用户组的对话框
-        group,ret = QInputDialog.getText(self,"存在的用户组","用户组信息\n"+str(list['result']['group_id_list']))
-        params = {
-            "group_id":group#要删除的用组织Id
-        }
-        access_token = self.access_token
-        request_url = request_url + "?access_token=" + access_token
-        headers = {'content-type': 'application/json'}
-        response = requests.post(request_url, data=params, headers=headers)
-        if response:
-             data = response.json()
-             if data['error_code'] == 0:
-                QMessageBox.about(self,"用户组删除","删除成功")
-             else:
-                QMessageBox.about(self, "用户组删除", "删除失败")
-        #删除两张表
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        table_1 = group + '_STUDENT'
-        c.execute("drop TABLE '" + table_1 + "'")
-        print("ok1")
-        table_2 = group + '_STUDENT_SIGN'
-        c.execute("drop TABLE '" + table_2 + "'")
-        print("删表成功！")
-        print("删除用户组成功！")
-        conn.commit()
+        #group,ret = QInputDialog.getText(self,"存在的用户组","用户组信息\n"+str(list['result']['group_id_list']))
+        group, ret = QInputDialog.getItem(self, "选择用户组", "请选择如下用户组进行删除：\n" ,list['result']['group_id_list'],0)
+        if ret:
+            params = {
+                "group_id":group#要删除的用组织Id
+            }
+            access_token = self.access_token
+            request_url = request_url + "?access_token=" + access_token
+            headers = {'content-type': 'application/json'}
+            response = requests.post(request_url, data=params, headers=headers)
+            if response:
+                 data = response.json()
+                 if data['error_code'] == 0:
+                    QMessageBox.about(self,"用户组删除","删除成功")
+                 else:
+                    QMessageBox.about(self, "用户组删除", "删除失败")
+            #删除两张表
+            conn = sqlite3.connect('my.db')
+            c = conn.cursor()
+            table_1 = group + '_STUDENT'
+            c.execute("drop TABLE '" + table_1 + "'")
+            print("ok1")
+            table_2 = group + '_STUDENT_SIGN'
+            c.execute("drop TABLE '" + table_2 + "'")
+            print("删表成功！")
+            print("删除用户组成功！")
+            conn.commit()
     #用户组查询
     def getlist(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getlist"
@@ -774,9 +776,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
         i = ''
         for l in list['result']['group_id_list']:
             i = i + l + ' '
-        group, ret = QInputDialog.getText(self, "添加用户", "请选择添加用户的用户组\n" + i, QLineEdit.Normal, "class1")
-        window_3 = sign_sussesswindow(group,self)
-        status = window_3.exec_()
+        #group, ret = QInputDialog.getText(self, "添加用户", "请选择添加用户的用户组\n" + i, QLineEdit.Normal, "class1")
+        group, ret = QInputDialog.getItem(self, "选择用户组", "请选择如下用户组进行删除：\n" ,list['result']['group_id_list'],0)
+        if ret:
+            window_3 = sign_sussesswindow(group,self)
+            status = window_3.exec_()
 
     #播放广告视频
     def playVideo(self):
