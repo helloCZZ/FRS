@@ -1,5 +1,6 @@
 #删除人脸信息
 import sqlite3
+import sys
 
 import requests
 from PyQt5.QtWidgets import QDialog
@@ -37,9 +38,11 @@ class delfacewindow(Ui_Dialog,QDialog):
             table = self.group_id+'_student'
             conn = sqlite3.connect('my.db')
             c = conn.cursor()
-            cursor = c.execute("select name,id from '"+table+"' where id = '" + list_user[i] + "'")
-            #cursor = c.execute("select name from student_1 where id = ?",123)
-            #print(c.fetchall())
+            try:
+                cursor = c.execute("select name,id from '"+table+"' where id = '" + list_user[i] + "'")
+            except Exception as e:
+                print("Unexpected error:",e)
+                return
             for l in cursor:
                 name = str(l[0])
                 id = str(l[1])

@@ -117,20 +117,24 @@ class adduserwindow(Ui_Dialog,QDialog):
                 if not data['error_code'] == 0:
                     QMessageBox.about(self, "温馨提示", "未检测到人脸！\n")
                     return
-                #如果是自己手动添加信息，也需要写入数据库
-                conn = sqlite3.connect('my.db')
-                print("OK0")
-                c = conn.cursor()
-                table = self.group+'_student'
-                cursor = c.execute("select * from '"+table+"'where id = '"+self.user_id+"'")
-                print("ok1")
-                l = len(list(cursor))
-                if l==1:
-                    QMessageBox.about(self, "温馨提示", "编号已经存在，请重新输入！\n")
+                try:
+                    #如果是自己手动添加信息，也需要写入数据库
+                    conn = sqlite3.connect('my.db')
+                    print("OK0")
+                    c = conn.cursor()
+                    table = self.group+'_student'
+                    cursor = c.execute("select * from '"+table+"'where id = '"+self.user_id+"'")
+                    print("ok1")
+                    l = len(list(cursor))
+                    if l==1:
+                        QMessageBox.about(self, "温馨提示", "编号已经存在，请重新输入！\n")
+                        return
+                    else:
+                        c.execute("INSERT INTO '" + table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.group))
+                        conn.commit()
+                except Exception as e:
+                    print("Unexpected error:", e)
                     return
-                else:
-                    c.execute("INSERT INTO '" + table + "'(ID,NAME,CLASS) VALUES (?,?,?)", (self.user_id,self.msg_name,self.group))
-                    conn.commit()
             else:
                 QMessageBox.about(self,"温馨提示","姓名或编号还没有输入")
                 return

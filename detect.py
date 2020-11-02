@@ -33,8 +33,6 @@ class detect_thread(QThread):#新的线程类，并继承QThread
         super(detect_thread, self).__init__()#初始化父类 后面括号不需要self
         self.access_token = token
         self.group = group
-        print(self.group)
-        print(self.group)
         self.condition = False
     #run函数执行结束代表线程结束
     def run(self):

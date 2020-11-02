@@ -81,12 +81,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.player.setVideoOutput(self.videoWidget)
 
         #添加背景图片
-
-
         palette = self.videoWidget.palette()
-        print("cccc")
         pixmap = QPixmap("./init.jpg")
-        print(pixmap)
         palette.setBrush(palette.Window,QBrush(pixmap))
         self.videoWidget.setPalette(palette)
         self.videoWidget.setAutoFillBackground(True)
@@ -545,21 +541,25 @@ class mywindow(Ui_MainWindow,QMainWindow):
             if response:
                 message = response.json()
                 if message['error_code'] == 0:
-                    # 创建两张表
-                    conn = sqlite3.connect('my.db')
-                    c = conn.cursor()
-                    # 添加班级用户表，class3_STUDENT
-                    table_1 = group + '_STUDENT'
-                    c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
-                    # 添加班级用户签到表 class3_STUDENT_SINGN
-                    table_2 = group + '_STUDENT_SIGN'
-                    # 签到成功表包含：学号，姓名，班级，签到日期
-                    c.execute(
-                        "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
-                    conn.commit()
-                    print("创表成功！")
-                    print("添加用户组成功！")
-                    QMessageBox.about(self,"用户组添加结果","用户组添加成功")
+                    try:
+                        # 创建两张表
+                        conn = sqlite3.connect('my.db')
+                        c = conn.cursor()
+                        # 添加班级用户表，class3_STUDENT
+                        table_1 = group + '_STUDENT'
+                        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+                        # 添加班级用户签到表 class3_STUDENT_SINGN
+                        table_2 = group + '_STUDENT_SIGN'
+                        # 签到成功表包含：学号，姓名，班级，签到日期
+                        c.execute(
+                            "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+                        conn.commit()
+                        print("创表成功！")
+                        print("添加用户组成功！")
+                        QMessageBox.about(self,"用户组添加结果","用户组添加成功")
+                    except Exception as e:
+                        print("Unexpected error:", e)
+                        return
 
                 else:
                     QMessageBox.about(self,"用户组添加结果","用户组添加失败\n"+message['error_msg'])
@@ -589,17 +589,21 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     QMessageBox.about(self,"用户组删除","删除成功")
                  else:
                     QMessageBox.about(self, "用户组删除", "删除失败")
-            #删除两张表
-            conn = sqlite3.connect('my.db')
-            c = conn.cursor()
-            table_1 = group + '_STUDENT'
-            c.execute("drop TABLE '" + table_1 + "'")
-            print("ok1")
-            table_2 = group + '_STUDENT_SIGN'
-            c.execute("drop TABLE '" + table_2 + "'")
-            print("删表成功！")
-            print("删除用户组成功！")
-            conn.commit()
+            try:
+                #删除两张表
+                conn = sqlite3.connect('my.db')
+                c = conn.cursor()
+                table_1 = group + '_STUDENT'
+                c.execute("drop TABLE '" + table_1 + "'")
+                print("ok1")
+                table_2 = group + '_STUDENT_SIGN'
+                c.execute("drop TABLE '" + table_2 + "'")
+                print("删表成功！")
+                print("删除用户组成功！")
+                conn.commit()
+            except Exception as e:
+                print("Unexpected error:",e)
+                return
     #用户组查询
     def getlist(self):
         request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceset/group/getlist"

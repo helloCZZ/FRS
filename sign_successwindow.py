@@ -23,12 +23,21 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
 
     #显示已经签到的学生信息
     def search_tosqlite3(self):
+        # 关于两个按钮的功能，都是关闭，但是关闭之前完成什么工作
+        self.pushButton.clicked.connect(self.save_data)
+        self.pushButton_2.clicked.connect(self.close_window)
+        # 导出数据
+
         conn = sqlite3.connect('my.db')
         c = conn.cursor()
         print("Opened database successfully")
         self.table = self.group+'_student_sign'
         self.table_2 = self.group+'_student'
-        cursor = c.execute("SELECT *  FROM '"+self.table+"'")
+        try:
+            cursor = c.execute("SELECT *  FROM '"+self.table+"'")
+        except Exception as e:
+            print("Unexpected error:", e)
+            return
         print("查询成功")
         for row in cursor:
             id = str(row[0])
@@ -43,16 +52,17 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
             self.tableWidget.setItem(rowcount, 2, QTableWidgetItem(self.group))
             self.tableWidget.setItem(rowcount, 3, QTableWidgetItem(date_time))
 
-        # 关于两个按钮的功能，都是关闭，但是关闭之前完成什么工作
-        self.pushButton.clicked.connect(self.save_data)
-        self.pushButton_2.clicked.connect(self.close_window)
-        # 导出数据
+
 
     #显示未签到的学生信息
     def search_tosqlite3_2(self):
-        conn = sqlite3.connect('my.db')
-        c = conn.cursor()
-        cursor=c.execute("select * from '"+self.table_2+"' where id not in(select id from '"+self.table+"')")
+        try:
+            conn = sqlite3.connect('my.db')
+            c = conn.cursor()
+            cursor=c.execute("select * from '"+self.table_2+"' where id not in(select id from '"+self.table+"')")
+        except Exception as e:
+            print("Unexpected error:", e)
+            return
         for row in cursor:
             id = str(row[0])
             user = row[1]
