@@ -115,7 +115,7 @@ class adduserwindow(Ui_Dialog,QDialog):
 
                 data = self.detect_face(self.base64_image)
                 if not data['error_code'] == 0:
-                    QMessageBox.about(self, "温馨提示", "未检测到人脸！\n")
+                    QMessageBox.about(self, "温馨提示", "图片中未检测到有效的人脸，请重新提交!\n")
                     return
                 try:
                     #如果是自己手动添加信息，也需要写入数据库

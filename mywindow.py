@@ -54,7 +54,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.client_id = QSettings('config.ini', QSettings.IniFormat).value("API_Key")
         self.client_secret = QSettings('config.ini', QSettings.IniFormat).value("Secret_Key")
 
-        self.isRecord = QSettings('config.ini', QSettings.IniFormat).value("recordVideo")
+        self.isRecord = QSettings('config.ini', QSettings.IniFormat).value("recordVideo",None,bool)
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
 
@@ -346,8 +346,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
                         self.record_Video.userID = user_id
                         self.record_Video.reMakePath = True
                         self.record_Video.ok = True
-                        print("换人后状态" + str(self.record_Video.isRunning()))
-                        print("换任1")
                         if not self.record_Video.isRunning():
                             self.record_Video.start()
                         # if self.record_Video.isRunning():
@@ -379,7 +377,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #判断播放广告的播放器是否运行
         elif self.player.state()==0 or self.player.state()==2 :
             self.noFaceNum = self.noFaceNum + 1
-            #print(self.noFaceNum)
+            print(self.noFaceNum)
 
             #pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
             #print(self.detectThread.isLastFace)
