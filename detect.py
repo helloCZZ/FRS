@@ -8,7 +8,8 @@ import base64
 import cv2
 import sqlite3
 import requests
-from PyQt5.QtCore import QThread, QTimer, pyqtSignal, QDateTime
+from PyQt5.QtCore import QThread, QTimer, pyqtSignal, QDateTime, QSettings
+
 
 #线程进行执行，只会执行线程类中的run函数，如果有新的功能需要实现，需要重新写一个run函数完成
 class detect_thread(QThread):#新的线程类，并继承QThread
@@ -34,6 +35,8 @@ class detect_thread(QThread):#新的线程类，并继承QThread
         self.access_token = token
         self.group = group
         self.condition = False
+        #活体检测
+        self.liveness_control = QSettings('config.ini', QSettings.IniFormat).value("liveness_control")
     #run函数执行结束代表线程结束
     def run(self):
         print("run")
@@ -80,7 +83,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
             "image_type": "BASE64",  # 图片信息的格式
             "face_field": "gender,age,beauty,expression,face_shape,glasses,emotion,mask",  # 请求识别人脸的属性，各个属性在字符串中用逗号隔开
             "max_face_num": 10,# 最多可以检测人脸的数目为：10
-            "liveness_control":"NORMAL"
+            "liveness_control":self.liveness_control
         }
 
         # 访问令牌，已经获取到
@@ -94,7 +97,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
         response = requests.post(request_url, data=params, headers=headers)
         if response:
             data = response.json()
-            print(data)
+            #print(data)
             #做一个判断：如果没有检测到人脸，将错误代码返还回去，注意需要有return语句
             if data['error_code'] !=0:
                 self.transmit_data.emit(data)

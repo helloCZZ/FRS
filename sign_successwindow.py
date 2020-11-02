@@ -94,7 +94,7 @@ class sign_sussesswindow(Ui_Dialog,QDialog):
             sheet.write(0,0,str)
             sheet.write(1, 0, "卡号")
             sheet.write(1, 1, "姓名")
-            sheet.write(1, 2, "班级")
+            sheet.write(1, 2, "用户组")
             for row in cursor:
                 for line in range(3):
                     sheet.write(i, line, row[line])

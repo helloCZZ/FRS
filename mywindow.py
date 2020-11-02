@@ -42,6 +42,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         super(mywindow,self).__init__()
         self.setupUi(self)#创建界面内容
 
+        #判断是否是第一次录像
+        self.firstRideo = True
+
         self.systemIsOpen = False
         # 设置一个初始值，后续用来实现：30秒无人脸就进行广告播放
         self.noFaceNum = 0
@@ -56,7 +59,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #self.isPlayAdvertising
 
         # now direct
-        self.direct = os.path.abspath(".")
+        #ubuntu使用
+        #self.direct = os.path.abspath(".")
 
         self.get_accesstoken()
         #cz 获取公共视频播放列表
@@ -75,9 +79,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         for videoPath in videoList:
             #sys.path[0]获取的绝对路径为反斜杠，需要替换为正的
             #windows
-            #url.setUrl("./video/ID0000/" + videoPath)
+            url.setUrl("./video/ID0000/" + videoPath)
             #ubuntu
-            url.setUrl("file://"+self.direct+"/video/ID0000/" + videoPath)
+            #url.setUrl("file://"+self.direct+"/video/ID0000/" + videoPath)
             print(url)
             self.playList.addMedia(QMediaContent(url))
 
@@ -232,16 +236,16 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.player.pause()
             self.player2.pause()
             print("关闭2")
+
+            #todo
             #停止录象线程
             if self.isRecord:
                 print("关闭3")
                 if self.record_Video.isRunning():
-                    print("关闭4")
                     self.record_Video.stop()
-                    print("关闭5")
                     self.record_Video.quit()
-                    print("关闭6")
-                    self.record_Video.wait()
+                    print("关闭5")
+                    #self.record_Video.wait()
                     print("关闭7")
             self.cameravideo.close_camera()
             print("关闭1")
@@ -250,6 +254,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
             # 显示本次签到情况,签到数据从线程的字典中拿出来
             # 创建一个类,并将线程传过来的数据交个窗口
             print(self.detectThread.sign_list)
+            print("录像停止")
             signdata = sign_data(self.detectThread.sign_list)
             signdata.exec_()
             print("关闭8")
@@ -284,13 +289,23 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     def show_cameradata(self):
 
+        #todo 30秒无人脸切换
         #30秒无人脸，就会切回广告播放
-        if self.noFaceNum == self.timeToChangeVideo:
+        if self.noFaceNum > int(self.timeToChangeVideo):
             self.player.setVideoOutput(self.videoWidget)
             self.player.setPlaylist(self.playList)
             self.player.play()
             self.player2.pause()
             self.noFaceNum = 0
+            print("30秒")
+            #关闭视频录制
+            if self.isRecord:
+                if self.record_Video.isRunning():
+                    print("关闭视频录制")
+                    self.record_Video.stop()
+                    #self.record_Video.quit()
+                    #self.record_Video.wait()
+
             self.detectThread.isLastFace = False
 
         #获取摄像头数据，转换数据
@@ -312,9 +327,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     self.playList2.clear()
                     for videoPath in videoList:
                         #windows
-                        #url.setUrl("./video/" + user_id + "/" + videoPath)
+                        url.setUrl("./video/" + user_id + "/" + videoPath)
                         #ubuntu
-                        url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
+                        #url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
                         self.playList2.addMedia(QMediaContent(url))
 
                     self.player2.setVideoOutput(self.videoWidget)
@@ -322,12 +337,50 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     self.player2.play()
                     self.player.pause()
 
+                    #todo 换人时，视频录制也会切换
+                    if self.isRecord:
+                        self.record_Video.stop()
+                        # self.record_Video.quit()
+                        # self.record_Video.wait()
+                        cv2.waitKey(60)
+                        self.record_Video.userID = user_id
+                        self.record_Video.reMakePath = True
+                        self.record_Video.ok = True
+                        print("换人后状态" + str(self.record_Video.isRunning()))
+                        print("换任1")
+                        if not self.record_Video.isRunning():
+                            self.record_Video.start()
+                        # if self.record_Video.isRunning():
+                        #     self.record_Video.stop()
+                        #     #self.record_Video.quit()
+                        #     #self.record_Video.wait()
+                        #     cv2.waitKey(60)
+                        #     self.record_Video.userID = user_id
+                        #     self.record_Video.reMakePath = True
+                        #     self.record_Video.ok=True
+                        #     print("换人后状态"+str(self.record_Video.isRunning()))
+                        #     print("换任1")
+                        # else:
+                        #     self.record_Video.userID = user_id
+                        #     self.record_Video.reMakePath = True
+                        #     self.record_Video.start()
+                        #     print("线程" + str(self.record_Video))
+                        #     print("换任2")
+                        #     print("换人2后状态" + str(self.record_Video.isRunning()))
+                        # while(not self.record_Video.isRunning()):
+                        #     print("强制开启")
+
+                    #print("cz换人后状态" + str(self.record_Video.isRunning()))
+                else:
+                    print("未找到当前用户ID的视频文件")
+                    return
                 self.detectThread.isLastFace = True
                 print(self.player.state())
         #判断播放广告的播放器是否运行
         elif self.player.state()==0 or self.player.state()==2 :
             self.noFaceNum = self.noFaceNum + 1
-            print(self.noFaceNum)
+            #print(self.noFaceNum)
+
             #pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
             #print(self.detectThread.isLastFace)
         # else:
@@ -521,15 +574,15 @@ class mywindow(Ui_MainWindow,QMainWindow):
     def get_search_data(self,data):
         self.plainTextEdit.setPlainText(data)
         #获取用户id
-        #形势例如：['用户人脸识别成功!', '编号:cz', '姓名:cz']
-        if len(str(data).split("\n\n"))==3:
-            userID = str(data).split("\n\n")[1].split(":")[1]
-            # 如果录像线程没启动，就启动它
-            #todo
-            if self.isRecord:
-                if not self.record_Video.isRunning():
-                    self.record_Video.userID = userID
-                    self.record_Video.start()
+        #形势例如：['用户人脸识别成功!', '编号:000002', '姓名:000002']
+        # if len(str(data).split("\n\n"))==3:
+        #     userID = str(data).split("\n\n")[1].split(":")[1]
+        #     # 如果录像线程没启动，就启动它
+        #     #todo
+        #     if self.isRecord:
+        #         if not self.record_Video.isRunning():
+        #             self.record_Video.userID = userID
+        #             self.record_Video.start()
 
 
 
@@ -822,5 +875,6 @@ class mywindow(Ui_MainWindow,QMainWindow):
     #cz
     def openVideoFile(self):
         self.player.setPlaylist(self.playList)
-        self.player.play()  # 播放视频
+        # 播放视频
+        self.player.play()
 

@@ -22,35 +22,53 @@ class recordVideo(QThread):#新的线程类，并继承QThread
         #cam = cv2.VideoCapture(0)
         self.recordCapture = capture
         #user_ID = userID
-        self.fps = 20
+        self.fps = 30
         wid = int(self.recordCapture.get(3))
         hei = int(self.recordCapture.get(4))
         self.size = (wid, hei)
+        #用来切换路径
+        self.reMakePath = True
         self.fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
         self.out = cv2.VideoWriter()
 
 
-
     def run(self):
         #启动系统时一直录像
-        # 保存的文件名称
-        folder = os.path.exists("video/" + self.userID + "_recordVideo")
 
-        if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
-            os.makedirs("video/" + self.userID + "_recordVideo")  # makedirs 创建文件时如果路径不存在会创建这个路径
-        path = "video/" + self.userID + "_recordVideo/" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')+".avi"
-        self.out.open(path,
-                 self.fourcc, self.fps, self.size)
-        while self.ok:
-            ret, frame = self.recordCapture.read()
-            if ret:
-                frame = cv2.flip(frame, 1)
-                self.out.write(frame)
-                cv2.waitKey(30)
+        while 1:
+            while self.ok:
+                if self.reMakePath:
+                    # 保存的文件名称
+                    # 判断是否存在文件夹
+                    folder = os.path.exists("video/" + self.userID + "_recordVideo")
+                    if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
+                        os.makedirs("video/" + self.userID + "_recordVideo")  # makedirs 创建文件时如果路径不存在会创建这个路径
+                    folder = os.path.exists("video/" + self.userID + "_recordVideo")
+                    path = "video/" + self.userID + "_recordVideo/" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + ".avi"
+                    self.out.open(path,self.fourcc, self.fps, self.size)
+                    self.reMakePath = False
+                ret, frame = self.recordCapture.read()
+                if ret:
+                    frame = cv2.flip(frame, 1)
+                    self.out.write(frame)
+                    cv2.waitKey(30)
+
+
+        # if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
+        #     os.makedirs("video/" + self.userID + "_recordVideo")  # makedirs 创建文件时如果路径不存在会创建这个路径
+        # path = "video/" + self.userID + "_recordVideo/" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')+".avi"
+        # self.out.open(path,
+        #          self.fourcc, self.fps, self.size)
+        # while self.ok:
+        #     ret, frame = self.recordCapture.read()
+        #     if ret:
+        #         frame = cv2.flip(frame, 1)
+        #         self.out.write(frame)
+        #         cv2.waitKey(30)
 
     def stop(self):
         self.ok = False
-        cv2.waitKey(30)
+        #self.wait()
         self.out.release()
         print("record线程已停止")
 
