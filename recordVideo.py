@@ -6,6 +6,7 @@
 '''
 import base64
 import datetime
+import os
 
 import cv2
 from PyQt5.QtCore import QThread
@@ -25,7 +26,7 @@ class recordVideo(QThread):#新的线程类，并继承QThread
         wid = int(self.recordCapture.get(3))
         hei = int(self.recordCapture.get(4))
         self.size = (wid, hei)
-        self.fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+        self.fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
         self.out = cv2.VideoWriter()
 
 
@@ -33,7 +34,11 @@ class recordVideo(QThread):#新的线程类，并继承QThread
     def run(self):
         #启动系统时一直录像
         # 保存的文件名称
-        path = "video/" + self.userID + "/" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')+".mp4"
+        folder = os.path.exists("video/" + self.userID + "_recordVideo")
+
+        if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
+            os.makedirs("video/" + self.userID + "_recordVideo")  # makedirs 创建文件时如果路径不存在会创建这个路径
+        path = "video/" + self.userID + "_recordVideo/" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')+".avi"
         self.out.open(path,
                  self.fourcc, self.fps, self.size)
         while self.ok:

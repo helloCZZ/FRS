@@ -19,7 +19,6 @@ from delfacewindow import delfacewindow#将删除用户窗口导入主窗口
 from data_show import sign_data
 from recordVideo import recordVideo
 from sign_successwindow import sign_sussesswindow
-from playsound import playsound
 import time
 from PyQt5.QtCore import Qt
 '''
@@ -56,6 +55,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
 
+        # now direct
+        self.direct = os.path.abspath(".")
+
         self.get_accesstoken()
         #cz 获取公共视频播放列表
         videoList = os.listdir("video/ID0000")
@@ -72,7 +74,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
         for videoPath in videoList:
             #sys.path[0]获取的绝对路径为反斜杠，需要替换为正的
-            url.setUrl("./video/ID0000/" + videoPath)
+            #windows
+            #url.setUrl("./video/ID0000/" + videoPath)
+            #ubuntu
+            url.setUrl("file://"+self.direct+"/video/ID0000/" + videoPath)
             print(url)
             self.playList.addMedia(QMediaContent(url))
 
@@ -222,26 +227,32 @@ class mywindow(Ui_MainWindow,QMainWindow):
             #关闭定时器1，不再去获取摄像头进行数据显示
             self.timeshow.stop()
             # 关闭摄像头
-            self.cameravideo.close_camera()
 
-            #设置互斥信号量
+
+            self.player.pause()
+            self.player2.pause()
+            print("关闭2")
+            #停止录象线程
+            if self.isRecord:
+                print("关闭3")
+                if self.record_Video.isRunning():
+                    print("关闭4")
+                    self.record_Video.stop()
+                    print("关闭5")
+                    self.record_Video.quit()
+                    print("关闭6")
+                    self.record_Video.wait()
+                    print("关闭7")
+            self.cameravideo.close_camera()
+            print("关闭1")
+            # 设置互斥信号量
             self.camera_status = False
             # 显示本次签到情况,签到数据从线程的字典中拿出来
             # 创建一个类,并将线程传过来的数据交个窗口
             print(self.detectThread.sign_list)
-
-            self.player.pause()
-            self.player2.pause()
-
-            #停止录象线程
-            if self.isRecord:
-                if self.record_Video.isRunning():
-                    self.record_Video.stop()
-                    self.record_Video.quit()
-                    self.record_Video.wait()
-
             signdata = sign_data(self.detectThread.sign_list)
             signdata.exec_()
+            print("关闭8")
             # 关初始化状态
             # 摄像头的一个定时器和检测画面的一个定时器同时关闭时才清空
             if self.timeshow.isActive() == False and self.facedetecttime.isActive() == False:
@@ -300,7 +311,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     #清空上一个人的播放列表
                     self.playList2.clear()
                     for videoPath in videoList:
-                        url.setUrl("./video/" + user_id + "/" + videoPath)
+                        #windows
+                        #url.setUrl("./video/" + user_id + "/" + videoPath)
+                        #ubuntu
+                        url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
                         self.playList2.addMedia(QMediaContent(url))
 
                     self.player2.setVideoOutput(self.videoWidget)
