@@ -56,13 +56,14 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.client_secret = QSettings('config.ini', QSettings.IniFormat).value("Secret_Key")
 
         self.isRecord = QSettings('config.ini', QSettings.IniFormat).value("recordVideo",None,bool)
-
+        self.systemTag = QSettings('config.ini', QSettings.IniFormat).value("systemTag", 0, int)
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
 
         # now direct
         #ubuntu使用
-        #self.direct = os.path.abspath(".")
+        if self.systemTag == 1:
+            self.direct = os.path.abspath(".")
 
         self.get_accesstoken()
         #cz 获取公共视频播放列表
@@ -79,11 +80,12 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.playList2.setPlaybackMode(3)
 
         for videoPath in videoList:
-            #sys.path[0]获取的绝对路径为反斜杠，需要替换为正的
-            #windows
-            url.setUrl("./video/ID0000/" + videoPath)
-            #ubuntu
-            #url.setUrl("file://"+self.direct+"/video/ID0000/" + videoPath)
+            if self.systemTag == 0:
+                #windows
+                url.setUrl("./video/ID0000/" + videoPath)
+            else:
+                #ubuntu
+                url.setUrl("file://"+self.direct+"/video/ID0000/" + videoPath)
             print(url)
             self.playList.addMedia(QMediaContent(url))
 
@@ -245,7 +247,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 print("关闭3")
                 if self.record_Video.isRunning():
                     self.record_Video.stop()
-                    self.record_Video.quit()
+                    #self.record_Video.quit()
                     print("关闭5")
                     #self.record_Video.wait()
                     print("关闭7")
@@ -296,6 +298,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         if self.noFaceNum > int(self.timeToChangeVideo):
             self.player.setVideoOutput(self.videoWidget)
             self.player.setPlaylist(self.playList)
+            self.player2.pause()
             self.player.play()
             self.player2.pause()
             self.noFaceNum = 0
@@ -328,10 +331,12 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     #清空上一个人的播放列表
                     self.playList2.clear()
                     for videoPath in videoList:
-                        #windows
-                        url.setUrl("./video/" + user_id + "/" + videoPath)
-                        #ubuntu
-                        #url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
+                        if self.systemTag == 0 :
+                            #windows
+                            url.setUrl("./video/" + user_id + "/" + videoPath)
+                        else:
+                            #ubuntu
+                            url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
                         self.playList2.addMedia(QMediaContent(url))
 
                     self.player2.setVideoOutput(self.videoWidget)
