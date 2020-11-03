@@ -6,6 +6,7 @@ import requests
 
 import os
 
+from PyQt5 import QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QPalette, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 
@@ -55,6 +56,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.client_secret = QSettings('config.ini', QSettings.IniFormat).value("Secret_Key")
 
         self.isRecord = QSettings('config.ini', QSettings.IniFormat).value("recordVideo",None,bool)
+
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
 
@@ -876,3 +878,13 @@ class mywindow(Ui_MainWindow,QMainWindow):
         # 播放视频
         self.player.play()
 
+    #当我们关闭一个窗口时，在PyQt中就会触发一个QCloseEvent的事件，正常情况下会直接关闭这个窗口，
+    #但是我们不希望这样的事情发生，所以我们需要重新定义QCloseEvent，函数名称为closeEvent不可变
+    def closeEvent(self,event):#函数名固定不可变
+        reply=QtWidgets.QMessageBox.question(self,u'警告',u'确认退出?',QtWidgets.QMessageBox.Yes,QtWidgets.QMessageBox.No)
+        #QtWidgets.QMessageBox.question(self,u'弹窗名',u'弹窗内容',选项1,选项2)
+        if reply==QtWidgets.QMessageBox.Yes:
+            self.on_actionclose()
+            event.accept()#关闭窗口
+        else:
+            event.ignore()#忽视点击X事件

@@ -9,7 +9,8 @@ import datetime
 import os
 
 import cv2
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QSettings
+
 
 #线程进行执行，只会执行线程类中的run函数，如果有新的功能需要实现，需要重新写一个run函数完成
 class recordVideo(QThread):#新的线程类，并继承QThread
@@ -22,7 +23,7 @@ class recordVideo(QThread):#新的线程类，并继承QThread
         #cam = cv2.VideoCapture(0)
         self.recordCapture = capture
         #user_ID = userID
-        self.fps = 30
+        self.fps = 25
         wid = int(self.recordCapture.get(3))
         hei = int(self.recordCapture.get(4))
         self.size = (wid, hei)
@@ -30,6 +31,12 @@ class recordVideo(QThread):#新的线程类，并继承QThread
         self.reMakePath = True
         self.fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
         self.out = cv2.VideoWriter()
+
+        #录制视频最长时间，达到后就重新生成一个文件
+        self.timeToCreateNewVideo = QSettings('config.ini', QSettings.IniFormat).value("timeToCreateNewVideo", 5000,
+                                                                                       int)
+        #已记录的帧数
+        self.num = 0
 
 
     def run(self):
@@ -51,6 +58,10 @@ class recordVideo(QThread):#新的线程类，并继承QThread
                 if ret:
                     frame = cv2.flip(frame, 1)
                     self.out.write(frame)
+                    self.num += 1
+                    if self.num > self.timeToCreateNewVideo:
+                        self.reMakePath = True
+                        self.num = 0
                     cv2.waitKey(30)
 
 
@@ -68,6 +79,7 @@ class recordVideo(QThread):#新的线程类，并继承QThread
 
     def stop(self):
         self.ok = False
+        cv2.waitKey(30)
         #self.wait()
         self.out.release()
         print("record线程已停止")
