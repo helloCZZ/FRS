@@ -59,7 +59,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.systemTag = QSettings('config.ini', QSettings.IniFormat).value("systemTag", 0, int)
         # 标志位，是否在播放广告
         #self.isPlayAdvertising
-
+        # if self.isRecord:
+        #     print("cccczzzz")
         # now direct
         #ubuntu使用
         if self.systemTag == 1:
@@ -127,7 +128,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.actionopen.triggered.connect(self.on_actionopen)#actionopen对应界面中的“启动签到”
 
         #cz 签到按钮开始播放广告
-        self.actionopen.triggered.connect(self.openVideoFile)  # actionopen对应界面中的“启动签到”
+        #self.actionopen.triggered.connect(self.openVideoFile)  # actionopen对应界面中的“启动签到”
 
         #退出签到
         self.actionclose.triggered.connect(self.on_actionclose)
@@ -181,9 +182,15 @@ class mywindow(Ui_MainWindow,QMainWindow):
         group, ret = QInputDialog.getItem(self, "选择签到用户组", "请选择如下用户组进行签到：\n" ,list['result']['group_id_list'],0)
         #group, ret = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
         if ret:
-            # 启动摄像头
-            self.cameravideo = camera()  # 创建摄像头这个类
+            try:
+                # 启动摄像头
+                self.cameravideo = camera()  # 创建摄像头这个类
+            except Exception as e:
+                QMessageBox.about(self,"摄像头初始化失败","摄像头初始化失败")
+                return
 
+            #开始播放广告
+            self.openVideoFile()
             #todo
             #2020-11-02 cz
             # 视频录制线程
@@ -619,12 +626,12 @@ class mywindow(Ui_MainWindow,QMainWindow):
                         c = conn.cursor()
                         # 添加班级用户表，class3_STUDENT
                         table_1 = group + '_STUDENT'
-                        c.execute("CREATE TABLE '" + table_1 + "'(ID int PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
+                        c.execute("CREATE TABLE '" + table_1 + "'(ID TEXT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT)")
                         # 添加班级用户签到表 class3_STUDENT_SINGN
                         table_2 = group + '_STUDENT_SIGN'
                         # 签到成功表包含：学号，姓名，班级，签到日期
                         c.execute(
-                            "CREATE TABLE '" + table_2 + "'(ID INT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
+                            "CREATE TABLE '" + table_2 + "'(ID TEXT PRIMARY KEY NOT NULL,NAME TEXT NOT NULL,CLASS TEXT,DATE TXET NOT NULL)")
                         conn.commit()
                         print("创表成功！")
                         print("添加用户组成功！")
@@ -750,6 +757,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
         if response:
             data = response.json()
             if data['error_code'] == 0:
+                folder = os.path.exists("video/" + self.window.user_id)
+                if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
+                    os.makedirs("video/" + self.window.user_id)  # makedirs 创建文件时如果路径不存在会创建这个路径
+                    print("文件夹创建成功")
                 print("添加成功")
 
             '''
@@ -772,7 +783,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         headers = {'content-type': 'application/json'}
         response = requests.post(request_url, data=params, headers=headers)
         if response:
-                    return response.json()
+            return response.json()
 
     #获取用户列表,需要传一个用户组过来
     def getuserslist(self,group):
@@ -817,14 +828,26 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #获取到用户人脸的face_token值
         face_list = self.user_face_list(window_2.group_id, window_2.user_id)
         #从face_list（人脸列表）中取出face_token值
+
+        try:
+            table = window_2.group_id + '_student'
+            conn = sqlite3.connect('my.db')
+            c = conn.cursor()
+            c.execute("delete from " + table + " where id = '" + window_2.user_id+"'")
+            conn.commit()
+        except Exception as e:
+            print("Unexpected error:", e)
+            return
+
         for i in face_list['result']['face_list']:
-                face_token = i['face_token']
-        #调用删除人脸信息的函数，参数不需要self!!!
-        status = self.del_face_token(window_2.group_id,window_2.user_id,face_token)
-        if status['error_msg'] == 'SUCCESS':
-            print("删除成功")
-        else:
-            print("删除失败")
+            face_token = i['face_token']
+            #调用删除人脸信息的函数，参数不需要self!!!
+            status = self.del_face_token(window_2.group_id,window_2.user_id,face_token)
+            if status['error_msg'] == 'SUCCESS':
+                print("删除成功")
+            else:
+                print("删除失败")
+        QMessageBox.about("删除成功")
         '''
             提示删除成功或者失败
             print(status['error_msg'])

@@ -50,7 +50,6 @@ class recordVideo(QThread):#新的线程类，并继承QThread
                     folder = os.path.exists("video/" + self.userID + "_recordVideo")
                     if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
                         os.makedirs("video/" + self.userID + "_recordVideo")  # makedirs 创建文件时如果路径不存在会创建这个路径
-                    folder = os.path.exists("video/" + self.userID + "_recordVideo")
                     path = "video/" + self.userID + "_recordVideo/" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + ".avi"
                     self.out.open(path,self.fourcc, self.fps, self.size)
                     self.reMakePath = False

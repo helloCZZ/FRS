@@ -66,7 +66,7 @@ class delfacewindow(Ui_Dialog,QDialog):
     # 确定按钮功能
     def get_data_close(self):
         self.group_id = self.listWidget.currentItem().text()
-        self.user_id = self.listWidget_2.currentItem().text()
+        self.user_id = self.listWidget_2.currentItem().text().split(" ")[0]
         #点击确定后关闭窗口
         #accept()函数返回值是1
         self.accept()
