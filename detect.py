@@ -82,7 +82,7 @@ class detect_thread(QThread):#新的线程类，并继承QThread
             "image": base64_image,  # 图片信息字符串
             "image_type": "BASE64",  # 图片信息的格式
             "face_field": "gender,age,beauty,expression,face_shape,glasses,emotion,mask",  # 请求识别人脸的属性，各个属性在字符串中用逗号隔开
-            "max_face_num": 10,# 最多可以检测人脸的数目为：10
+            "max_face_num": 1,# 最多可以检测人脸的数目为：1
             "liveness_control":self.liveness_control
         }
 

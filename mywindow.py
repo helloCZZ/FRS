@@ -3,7 +3,7 @@ import sqlite3
 import sys
 import cv2
 import requests
-
+import cgitb
 import os
 
 from PyQt5 import QtWidgets
@@ -42,7 +42,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
     def __init__(self):#初始化
         super(mywindow,self).__init__()
         self.setupUi(self)#创建界面内容
-
+        cgitb.enable(format='text')
         #判断是否是第一次录像
         self.firstRideo = True
 
@@ -94,12 +94,17 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self.videoWidget)
 
-        #添加背景图片
-        palette = self.videoWidget.palette()
-        pixmap = QPixmap("./init.jpg")
-        palette.setBrush(palette.Window,QBrush(pixmap))
-        self.videoWidget.setPalette(palette)
-        self.videoWidget.setAutoFillBackground(True)
+
+        #todo vidoe
+        if self.isRecord:
+            self.record_Video = recordVideo(None)
+
+        #添加背景图片 not work
+        # palette = self.videoWidget.palette()
+        # pixmap = QPixmap("./init.jpg")
+        # palette.setBrush(palette.Window,QBrush(pixmap))
+        # self.videoWidget.setPalette(palette)
+        # self.videoWidget.setAutoFillBackground(True)
         #self.videoWidget.setWindowFlags(Qt.FramelessWindowHint)
 
         #player2用来播放每个人的视频
@@ -182,11 +187,14 @@ class mywindow(Ui_MainWindow,QMainWindow):
         group, ret = QInputDialog.getItem(self, "选择签到用户组", "请选择如下用户组进行签到：\n" ,list['result']['group_id_list'],0)
         #group, ret = QInputDialog.getText(self, "选择签到班级", "请选择如下班级进行签到：\n" + str(list['result']['group_id_list']),QLineEdit.Normal, "class1")
         if ret:
-            try:
-                # 启动摄像头
-                self.cameravideo = camera()  # 创建摄像头这个类
-            except Exception as e:
-                QMessageBox.about(self,"摄像头初始化失败","摄像头初始化失败")
+
+            #close system in order to open twice
+            #self.on_actionclose()
+
+            # 启动摄像头
+            self.cameravideo = camera()  # 创建摄像头这个类
+            if not self.cameravideo.capture.isOpened():
+                QMessageBox.about(self, "摄像头初始化失败", "摄像头初始化失败")
                 return
 
             #开始播放广告
@@ -195,7 +203,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
             #2020-11-02 cz
             # 视频录制线程
             if self.isRecord:
-                self.record_Video = recordVideo(self.cameravideo.capture)
+                #self.record_Video = recordVideo(self.cameravideo.capture)
+                self.record_Video.recordCapture = self.cameravideo.capture
+                wid = int(self.cameravideo.capture.get(3))
+                hei = int(self.cameravideo.capture.get(4))
+                self.record_Video.size = (wid,hei)
 
             # 互斥信号量
             self.camera_status = True
@@ -243,9 +255,12 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.timeshow.stop()
             # 关闭摄像头
 
-
-            self.player.pause()
-            self.player2.pause()
+            #todo  2020 -11 096
+            # self.player.pause()
+            # self.player2.pause()
+            self.playList.clear()
+            self.player.stop()
+            self.player2.stop()
             print("关闭2")
 
             #todo
@@ -300,14 +315,18 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     def show_cameradata(self):
 
-        #todo 30秒无人脸切换
+        #todo 30秒无人脸切换 player
         #30秒无人脸，就会切回广告播放
         if self.noFaceNum > int(self.timeToChangeVideo):
-            self.player.setVideoOutput(self.videoWidget)
+            # self.player.setVideoOutput(self.videoWidget)
+            # self.player.setPlaylist(self.playList)
+            # self.player2.pause()
+            # self.player.play()
+            # self.player2.pause()
+            self.player.stop()
             self.player.setPlaylist(self.playList)
-            self.player2.pause()
             self.player.play()
-            self.player2.pause()
+
             self.noFaceNum = 0
             print("30秒")
             #关闭视频录制
@@ -346,10 +365,18 @@ class mywindow(Ui_MainWindow,QMainWindow):
                             url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
                         self.playList2.addMedia(QMediaContent(url))
 
-                    self.player2.setVideoOutput(self.videoWidget)
-                    self.player2.setPlaylist(self.playList2)
-                    self.player2.play()
-                    self.player.pause()
+
+                    #todo player2
+                    # self.player2.setVideoOutput(self.videoWidget)
+                    # self.player2.setPlaylist(self.playList2)
+                    # self.player2.play()
+                    # self.player.pause()
+
+                    #self.player2.setVideoOutput(self.videoWidget)
+                    self.player.stop()
+                    self.player.setPlaylist(self.playList2)
+                    self.player.play()
+                    #self.player.pause()
 
                     #todo 换人时，视频录制也会切换
                     if self.isRecord:
@@ -435,110 +462,114 @@ class mywindow(Ui_MainWindow,QMainWindow):
             # 人脸信息：data['result']['face_list']，是列表，每个数据是一个字典
             # 取每个人脸信息 data['result']['face_list'][0-i]
             # 循环取出所有人脸信息
-            for i in range(face_num):
-                data['result']['face_list'][i]
-                age = data['result']['face_list'][i]['age']
-                beauty = data['result']['face_list'][i]['beauty']
-                gender = data['result']['face_list'][i]['gender']['type']
-                expression = data['result']['face_list'][i]['expression']['type']
-                face_shape = data['result']['face_list'][i]['face_shape']['type']
-                glasses = data['result']['face_list'][i]['glasses']['type']
-                emotion = data['result']['face_list'][i]['emotion']['type']
-                mask = data['result']['face_list'][i]['mask']['type']
-                #人脸库
-                left = data['result']['face_list'][i]['location']['left']
-                top = data['result']['face_list'][i]['location']['top']
-                width = data['result']['face_list'][i]['location']['width']
-                height = data['result']['face_list'][i]['location']['height']
-                #print("location"+str(left))
+            #for i in range(face_num):
+            i = 0
+            data['result']['face_list'][i]
+            age = data['result']['face_list'][i]['age']
+            beauty = data['result']['face_list'][i]['beauty']
+            gender = data['result']['face_list'][i]['gender']['type']
+            expression = data['result']['face_list'][i]['expression']['type']
+            face_shape = data['result']['face_list'][i]['face_shape']['type']
+            glasses = data['result']['face_list'][i]['glasses']['type']
+            emotion = data['result']['face_list'][i]['emotion']['type']
+            mask = data['result']['face_list'][i]['mask']['type']
+            #人脸库
+            left = data['result']['face_list'][i]['location']['left']
+            top = data['result']['face_list'][i]['location']['top']
+            width = data['result']['face_list'][i]['location']['width']
+            height = data['result']['face_list'][i]['location']['height']
+            #print("location"+str(left))
 
-                #往窗口中添加文本，参数就是需要的文本信息，年龄需要转换成字符串
-                self.plainTextEdit_2.appendPlainText("\n"+"第" + str(i + 1) + "个用户人脸信息\n")
-                self.plainTextEdit_2.appendPlainText("年龄是：" + str(age)+"\n")
-                #性别
-                if gender == 'male':
-                    gender = "男"
+            #往窗口中添加文本，参数就是需要的文本信息，年龄需要转换成字符串
+            self.plainTextEdit_2.appendPlainText("\n"+"第" + str(i + 1) + "个用户人脸信息\n")
+            self.plainTextEdit_2.appendPlainText("年龄是：" + str(age)+"\n")
+            #性别
+            if gender == 'male':
+                gender = "男"
+            else:
+                gender = "女"
+            self.plainTextEdit_2.appendPlainText("性别是：" + str(gender)+"\n")
+            self.plainTextEdit_2.appendPlainText("颜值分数：" + str(beauty)+"\n")
+            #表情
+            if expression == 'none':
+                expression = "不笑"
+            else:
+                if expression == 'smile':
+                     expression = '微笑'
                 else:
-                    gender = "女"
-                self.plainTextEdit_2.appendPlainText("性别是：" + str(gender)+"\n")
-                self.plainTextEdit_2.appendPlainText("颜值分数：" + str(beauty)+"\n")
-                #表情
-                if expression == 'none':
-                    expression = "不笑"
+                     expression = "大笑"
+            self.plainTextEdit_2.appendPlainText("表情：" + str(expression)+"\n")
+            #脸型
+            if face_shape == 'square':
+                face_shape = "国字脸"
+            else:
+                if face_shape == 'triangle':
+                    face_shape = "瓜子脸"
                 else:
-                    if expression == 'smile':
-                         expression = '微笑'
+                    if face_shape == 'voal':
+                        face_shape = "椭圆脸"
                     else:
-                         expression = "大笑"
-                self.plainTextEdit_2.appendPlainText("表情：" + str(expression)+"\n")
-                #脸型
-                if face_shape == 'square':
-                    face_shape = "国字脸"
-                else:
-                    if face_shape == 'triangle':
-                        face_shape = "瓜子脸"
-                    else:
-                        if face_shape == 'voal':
-                            face_shape = "椭圆脸"
+                        if face_shape == 'heart':
+                            face_shape = "心形脸"
                         else:
-                            if face_shape == 'heart':
-                                face_shape = "心形脸"
-                            else:
-                                face_shape = '圆脸'
-                self.plainTextEdit_2.appendPlainText("脸型是：" + str(face_shape)+"\n")
-                #眼睛
-                if glasses == 'none':
-                    glasses = "无眼镜"
+                            face_shape = '圆脸'
+            self.plainTextEdit_2.appendPlainText("脸型是：" + str(face_shape)+"\n")
+            #眼睛
+            if glasses == 'none':
+                glasses = "无眼镜"
+            else:
+                if glasses =='common':
+                    glasses = "普通眼镜"
                 else:
-                    if glasses =='common':
-                        glasses = "普通眼镜"
-                    else:
-                        glasses = "墨镜"
-                self.plainTextEdit_2.appendPlainText("是否佩戴眼睛：" + str(glasses)+"\n")
-                #情绪
-                if emotion == 'angry':
-                    emotion = "愤怒"
+                    glasses = "墨镜"
+            self.plainTextEdit_2.appendPlainText("是否佩戴眼睛：" + str(glasses)+"\n")
+
+            #put emotion to recordVideo thread
+            self.record_Video.emotion = emotion
+            #情绪
+            if emotion == 'angry':
+                emotion = "愤怒"
+            else:
+                if emotion == 'disgust':
+                    emotion ="厌恶"
                 else:
-                    if emotion == 'disgust':
-                        emotion ="厌恶"
+                    if emotion == 'fear':
+                        emotion="恐惧"
                     else:
-                        if emotion == 'fear':
-                            emotion="恐惧"
+                        if emotion == 'happy':
+                            emotion = "高兴"
                         else:
-                            if emotion == 'happy':
-                                emotion = "高兴"
+                            if emotion == 'sad':
+                                emotion = "伤心"
                             else:
-                                if emotion == 'sad':
-                                    emotion = "伤心"
+                                if emotion == 'surprise':
+                                    emotion = "惊讶"
                                 else:
-                                    if emotion == 'surprise':
-                                        emotion = "惊讶"
+                                    if emotion == 'neutral':
+                                        emotion = "无表情"
                                     else:
-                                        if emotion == 'neutral':
-                                            emotion = "无表情"
+                                        if emotion == 'pouty':
+                                            emotion = "撅嘴"
                                         else:
-                                            if emotion == 'pouty':
-                                                emotion = "撅嘴"
-                                            else:
-                                                emotion = "鬼脸"
+                                            emotion = "鬼脸"
 
 
-                self.plainTextEdit_2.appendPlainText("情绪是：" + str(emotion)+"\n")
-                if mask == 0:
-                    mask = "否"
-                else:
-                    mask = "是"
-                self.plainTextEdit_2.appendPlainText("是否佩戴口罩：" + mask+'\n')
-                '''
-                 #画出人脸框,会有卡顿，因为API是500ms返回一次结果
-                self.leftTopX = int(left)
-                self.leftTopY = int(top)
-                self.rightBottomX = int(left+width)
-                self.rightBottomY = int(top+width)
-                img = self.cameravideo.read_camera()
-                cv2.rectangle(img, (self.leftTopX, self.leftTopY), (self.rightBottomX, self.rightBottomY),(0,255,0),3)
-                cv2.imshow("face", img)
-                '''
+            self.plainTextEdit_2.appendPlainText("情绪是：" + str(emotion)+"\n")
+            if mask == 0:
+                mask = "否"
+            else:
+                mask = "是"
+            self.plainTextEdit_2.appendPlainText("是否佩戴口罩：" + mask+'\n')
+            '''
+             #画出人脸框,会有卡顿，因为API是500ms返回一次结果
+            self.leftTopX = int(left)
+            self.leftTopY = int(top)
+            self.rightBottomX = int(left+width)
+            self.rightBottomY = int(top+width)
+            img = self.cameravideo.read_camera()
+            cv2.rectangle(img, (self.leftTopX, self.leftTopY), (self.rightBottomX, self.rightBottomY),(0,255,0),3)
+            cv2.imshow("face", img)
+            '''
 
     #人脸检测与属性分析请求,想得到如年龄、性别等信息。
     #未被调用
@@ -847,7 +878,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                 print("删除成功")
             else:
                 print("删除失败")
-        QMessageBox.about("删除成功")
+        #QMessageBox.about("删除成功")
         '''
             提示删除成功或者失败
             print(status['error_msg'])

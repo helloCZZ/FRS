@@ -50,4 +50,6 @@ class camera():
 
     #退出签到（关闭摄像头）
     def close_camera(self):
+        print("guanbi capture")
         self.capture.release()
+        print("guanbi capture2")

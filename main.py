@@ -1,3 +1,5 @@
+import cgitb
+
 import requests
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -89,6 +91,7 @@ from login import Ui_Dialog
     #     self.lineEdit_2.setText(self.text_2)
 
 if __name__ == '__main__':
+    cgitb.enable(format='text')
     # 创建应用程序对象
     app = QApplication(sys.argv)
     #dialog = login_window()
