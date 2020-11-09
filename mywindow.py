@@ -46,6 +46,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
         #判断是否是第一次录像
         self.firstRideo = True
 
+        #judge whether is playing advertising
+        self.isPlayingAD = True
+
         self.systemIsOpen = False
         # 设置一个初始值，后续用来实现：30秒无人脸就进行广告播放
         self.noFaceNum = 0
@@ -67,9 +70,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.direct = os.path.abspath(".")
 
         self.get_accesstoken()
-        #cz 获取公共视频播放列表
-        videoList = os.listdir("video/ID0000")
-        url = QUrl()
+
+        # cz 获取公共视频播放列表
+        self.videoList = os.listdir("video/ID0000")
+
         #将视频列表加载到playList中
         self.playList = QMediaPlaylist()
 
@@ -80,15 +84,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
         self.playList.setPlaybackMode(3)
         self.playList2.setPlaybackMode(3)
 
-        for videoPath in videoList:
-            if self.systemTag == 0:
-                #windows
-                url.setUrl("./video/ID0000/" + videoPath)
-            else:
-                #ubuntu
-                url.setUrl("file://"+self.direct+"/video/ID0000/" + videoPath)
-            print(url)
-            self.playList.addMedia(QMediaContent(url))
+
 
         #cz
         self.player = QMediaPlayer()
@@ -254,15 +250,13 @@ class mywindow(Ui_MainWindow,QMainWindow):
             #关闭定时器1，不再去获取摄像头进行数据显示
             self.timeshow.stop()
             # 关闭摄像头
-
             #todo  2020 -11 096
             # self.player.pause()
             # self.player2.pause()
             self.playList.clear()
             self.player.stop()
-            self.player2.stop()
+            #self.player2.stop()
             print("关闭2")
-
             #todo
             #停止录象线程
             if self.isRecord:
@@ -282,6 +276,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
             print(self.detectThread.sign_list)
             print("录像停止")
             signdata = sign_data(self.detectThread.sign_list)
+            #del self.detectThread
             signdata.exec_()
             print("关闭8")
             # 关初始化状态
@@ -323,21 +318,37 @@ class mywindow(Ui_MainWindow,QMainWindow):
             # self.player2.pause()
             # self.player.play()
             # self.player2.pause()
-            self.player.stop()
-            self.player.setPlaylist(self.playList)
-            self.player.play()
+            try:
+                self.player.stop()
+                self.playList.clear()
+                url = QUrl()
+                for videoPath in self.videoList:
+                    if self.systemTag == 0:
+                        # windows
+                        url.setUrl("./video/ID0000/" + videoPath)
+                    else:
+                        # ubuntu
+                        url.setUrl("file://" + self.direct + "/video/ID0000/" + videoPath)
+                    self.playList.addMedia(QMediaContent(url))
+                    print(url)
 
-            self.noFaceNum = 0
-            print("30秒")
-            #关闭视频录制
-            if self.isRecord:
-                if self.record_Video.isRunning():
-                    print("关闭视频录制")
-                    self.record_Video.stop()
-                    #self.record_Video.quit()
-                    #self.record_Video.wait()
+                #self.player.setPlaylist(self.playList)
+                self.player.play()
+                self.isPlayingAD = True
+                self.noFaceNum = 0
+                print("30秒")
+                #关闭视频录制
+                if self.isRecord:
+                    if self.record_Video.isRunning():
+                        print("关闭视频录制")
+                        self.record_Video.stop()
+                        #self.record_Video.quit()
+                        #self.record_Video.wait()
 
-            self.detectThread.isLastFace = False
+                self.detectThread.isLastFace = False
+                return
+            except Exception as e:
+                print(e)
 
         #获取摄像头数据，转换数据
         #判断是否检测到了人脸
@@ -355,7 +366,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     user_id = self.detectThread.lastFace
                     videoList = os.listdir("video/" + user_id)
                     #清空上一个人的播放列表
-                    self.playList2.clear()
+                    self.player.stop()
+                    self.playList.clear()
                     for videoPath in videoList:
                         if self.systemTag == 0 :
                             #windows
@@ -363,7 +375,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                         else:
                             #ubuntu
                             url.setUrl("file://" + self.direct + "/video/" + user_id + "/" + videoPath)
-                        self.playList2.addMedia(QMediaContent(url))
+                        self.playList.addMedia(QMediaContent(url))
 
 
                     #todo player2
@@ -373,8 +385,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     # self.player.pause()
 
                     #self.player2.setVideoOutput(self.videoWidget)
-                    self.player.stop()
-                    self.player.setPlaylist(self.playList2)
+                    #self.player.stop()
+                    #self.player.setPlaylist(self.playList2)
                     self.player.play()
                     #self.player.pause()
 
@@ -414,9 +426,10 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     print("未找到当前用户ID的视频文件")
                     return
                 self.detectThread.isLastFace = True
+                self.isPlayingAD = False
                 print(self.player.state())
         #判断播放广告的播放器是否运行
-        elif self.player.state()==0 or self.player.state()==2 :
+        elif not self.isPlayingAD :
             self.noFaceNum = self.noFaceNum + 1
             print(self.noFaceNum)
 
@@ -933,6 +946,17 @@ class mywindow(Ui_MainWindow,QMainWindow):
 
     #cz
     def openVideoFile(self):
+
+        url = QUrl()
+        for videoPath in self.videoList:
+            if self.systemTag == 0:
+                # windows
+                url.setUrl("./video/ID0000/" + videoPath)
+            else:
+                # ubuntu
+                url.setUrl("file://" + self.direct + "/video/ID0000/" + videoPath)
+            print(url)
+            self.playList.addMedia(QMediaContent(url))
         self.player.setPlaylist(self.playList)
         # 播放视频
         self.player.play()
