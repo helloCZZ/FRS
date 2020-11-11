@@ -109,7 +109,7 @@
        <enum>Qt::LeftToRight</enum>
       </property>
       <property name="text">
-       <string>本次学生签到情况</string>
+       <string>本次用户签到情况</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

@@ -419,12 +419,12 @@
   </action>
   <action name="actionadd">
    <property name="text">
-    <string>添加学生</string>
+    <string>添加用户</string>
    </property>
   </action>
   <action name="actiondel">
    <property name="text">
-    <string>删除学生</string>
+    <string>删除用户</string>
    </property>
   </action>
   <action name="actionsave">
@@ -440,7 +440,7 @@
   </action>
   <action name="actiond">
    <property name="text">
-    <string>导出学生签到信息</string>
+    <string>导出用户签到信息</string>
    </property>
   </action>
   <action name="actionaddgroup">

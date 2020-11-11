@@ -82,8 +82,12 @@ class recordVideo(QThread):#新的线程类，并继承QThread
         #         cv2.waitKey(30)
 
     def stop(self):
+        print("in stop")
         self.ok = False
-        cv2.waitKey(30)
+        print("set ok = false")
+        #cv2.waitKey(100)
+        self.msleep(100)
+        print("waitkey")
         #self.wait()
         self.out.release()
         print("record线程已停止")

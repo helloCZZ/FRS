@@ -96,11 +96,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.record_Video = recordVideo(None)
 
         #添加背景图片 not work
-        # palette = self.videoWidget.palette()
-        # pixmap = QPixmap("./init.jpg")
-        # palette.setBrush(palette.Window,QBrush(pixmap))
-        # self.videoWidget.setPalette(palette)
-        # self.videoWidget.setAutoFillBackground(True)
+        palette = self.videoWidget.palette()
+        pixmap = QPixmap("./init.jpg")
+        palette.setBrush(palette.Window,QBrush(pixmap))
+        self.videoWidget.setPalette(palette)
+        self.videoWidget.setAutoFillBackground(True)
         #self.videoWidget.setWindowFlags(Qt.FramelessWindowHint)
 
         #player2用来播放每个人的视频
@@ -247,6 +247,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
             #线程结束 返回Fslse
             self.detectThread.quit()
             self.detectThread.wait()
+
             #关闭定时器1，不再去获取摄像头进行数据显示
             self.timeshow.stop()
             # 关闭摄像头
@@ -256,6 +257,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.playList.clear()
             self.player.stop()
             #self.player2.stop()
+
+            self.isPlayingAD = True
             print("关闭2")
             #todo
             #停止录象线程
@@ -273,10 +276,11 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.camera_status = False
             # 显示本次签到情况,签到数据从线程的字典中拿出来
             # 创建一个类,并将线程传过来的数据交个窗口
-            print(self.detectThread.sign_list)
+            #print(self.detectThread.sign_list)
             print("录像停止")
             signdata = sign_data(self.detectThread.sign_list)
-            #del self.detectThread
+            # if not self.detectThread == None:
+            #     del self.detectThread
             signdata.exec_()
             print("关闭8")
             # 关初始化状态
@@ -393,6 +397,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     #todo 换人时，视频录制也会切换
                     if self.isRecord:
                         self.record_Video.stop()
+
                         # self.record_Video.quit()
                         # self.record_Video.wait()
                         cv2.waitKey(60)
@@ -401,6 +406,7 @@ class mywindow(Ui_MainWindow,QMainWindow):
                         self.record_Video.ok = True
                         if not self.record_Video.isRunning():
                             self.record_Video.start()
+
                         # if self.record_Video.isRunning():
                         #     self.record_Video.stop()
                         #     #self.record_Video.quit()
@@ -427,11 +433,9 @@ class mywindow(Ui_MainWindow,QMainWindow):
                     return
                 self.detectThread.isLastFace = True
                 self.isPlayingAD = False
-                print(self.player.state())
         #判断播放广告的播放器是否运行
         elif not self.isPlayingAD :
             self.noFaceNum = self.noFaceNum + 1
-            print(self.noFaceNum)
 
             #pic = self.cameravideo.camera_to_pic()#将摄像头获取到的数据转换成界面能显示的数据，返回值为qpmaxip
             #print(self.detectThread.isLastFace)
@@ -538,7 +542,8 @@ class mywindow(Ui_MainWindow,QMainWindow):
             self.plainTextEdit_2.appendPlainText("是否佩戴眼睛：" + str(glasses)+"\n")
 
             #put emotion to recordVideo thread
-            self.record_Video.emotion = emotion
+            if self.isRecord:
+                self.record_Video.emotion = emotion
             #情绪
             if emotion == 'angry':
                 emotion = "愤怒"

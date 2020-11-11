@@ -43,8 +43,8 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.groupBox.setTitle(_translate("Dialog", "选择要查看学生所在的班级"))
-        self.groupBox_2.setTitle(_translate("Dialog", "选择要查看的学生"))
-        self.pushButton.setText(_translate("Dialog", "确定已选择的学生并删除"))
+        self.groupBox.setTitle(_translate("Dialog", "选择要查看用户所在的用户组"))
+        self.groupBox_2.setTitle(_translate("Dialog", "选择要查看的用户"))
+        self.pushButton.setText(_translate("Dialog", "确定已选择的用户并删除"))
         self.pushButton_2.setText(_translate("Dialog", "取消"))
         self.pushButton_3.setText(_translate("Dialog", "选中"))
